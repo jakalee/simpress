@@ -49,6 +49,10 @@
 
 버그 제보와 기능 제안은 [Issues](https://github.com/jakalee/simpress/issues)에서, 코드 기여는 Pull Request로 환영합니다.
 
+## 개발
+
+[Claude Code](https://www.anthropic.com/claude-code)의 도움을 받아 개발했습니다. 최종 검토, 통합 및 유지관리는 프로젝트 소유자가 수행합니다.
+
 ## 라이선스와 크레딧
 
 Simple Impress Editor는 [MIT License](LICENSE)로 배포됩니다. 사용자가 작성하거나 삽입한 콘텐츠에는 프로젝트 라이선스가 적용되지 않습니다.

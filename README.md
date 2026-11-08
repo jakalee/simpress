@@ -49,6 +49,10 @@ The editor and impress.js runtime are bundled in [`index.html`](index.html) so t
 
 Contributions, bug reports, and feature requests are welcome through [Issues](https://github.com/jakalee/simpress/issues) and pull requests.
 
+## Development
+
+Developed with assistance from [Claude Code](https://www.anthropic.com/claude-code). Final review, integration, and maintenance are performed by the project owner.
+
 ## License and credits
 
 Simple Impress Editor is released under the [MIT License](LICENSE). User-created content is not covered by the project license.
