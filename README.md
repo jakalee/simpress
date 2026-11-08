@@ -1,54 +1,56 @@
-# simple impress editor
+# Simple Impress Editor
 
-설치 없이 브라우저에서 쓰는 impress.js 프레젠테이션 편집기입니다.
-슬라이드를 넘기는 대신, 큰 캔버스 하나에 내용을 놓고 움직이고 확대하며 발표합니다.
+[한국어](README.ko.md) · [Live demo](https://jakalee.github.io/simpress/) · [Download the latest release](https://github.com/jakalee/simpress/releases/latest)
 
-**[바로 써보기](https://jakalee.github.io/simpress/)**
+> A private, offline-first, single-file visual editor for impress.js presentations.
 
-![simple impress editor 편집 화면](screenshot.png)
+**No install. No account. No server.** Arrange content on an infinite canvas, connect frames into a presentation path, and export a standalone HTML file.
 
-## 특징
+[![Simple Impress Editor demo](assets/demo.gif)](https://jakalee.github.io/simpress/)
 
-- **무한 캔버스:** 휠로 확대·축소하고, 배경을 끌어 이동합니다.
-- **프레임과 경로:** 프레임을 놓고 순서를 이으면 그 순서가 발표 순서가 됩니다.
-- **변형 링:** 객체를 누르면 나오는 링으로 옮기고, 키우고, 돌립니다.
-- **3D:** Z 깊이와 X·Y축 회전을 쓸 수 있고, 편집 화면과 발표 화면이 같게 보입니다.
-- **콘텐츠:** 텍스트, 이미지, 도형, 영상. 이미지를 여러 장 고르면 격자로 놓고 경로까지 연결합니다.
-- **발표 도구:** 발표자 노트(P키), 슬라이드 탐색기, 진행 표시.
-- **저장:** 자동 저장, 실행 취소, JSON 저장·불러오기.
-- **내보내기:** 이미지까지 들어 있는 HTML 파일 하나로 내보냅니다. 받는 사람은 설치할 것이 없습니다.
+## Why
 
-## 사용법
+- **Private by default** — your presentation stays in your browser.
+- **Zero setup** — open `index.html`; there is no package install or build step.
+- **Visual 3D editing** — move, scale, rotate, and place objects in depth.
+- **Portable output** — export a presentation as one self-contained HTML file.
 
-위의 링크를 열거나, [`index.html`](index.html)을 내려받아 더블클릭하면 됩니다. 서버와 빌드는 필요 없습니다.
+## Try it
 
+1. Open the [live demo](https://jakalee.github.io/simpress/) or download [`index.html`](index.html).
+2. Add text, images, shapes, frames, and videos to the canvas.
+3. Connect objects into a path, preview the presentation, and select **Export HTML**.
 
+## Features
 
-작성한 내용은 쓰는 사람의 브라우저에만 저장되고 어디로도 전송되지 않습니다.
-브라우저 데이터를 지우면 함께 사라지므로, 중요한 문서는 JSON으로 저장해 두세요.
+- Infinite canvas with pan and zoom
+- Frames and presentation-path editing
+- Visual move, resize, rotate, X/Y tilt, and Z-depth controls
+- Text, images, shapes, local video, and YouTube links
+- Presenter notes, slide navigator, and progress indicator
+- Autosave, undo/redo, and JSON import/export
+- Standalone HTML export with embedded local assets
 
-| 조작 | 동작 |
-|---|---|
-| 휠 | 확대·축소 |
-| 배경 드래그 | 이동 |
-| 빈 곳 더블클릭 | 글쓰기 |
-| Shift + 드래그 | 범위 선택 |
-| 우클릭 또는 ⌥ + 드래그 | 시점 돌리기 |
-| 방향키 | 경로 따라 이동 |
-| ⌘/Ctrl + Enter | 테스트 실행 |
-| 발표 중 P | 발표자 노트 |
-| 발표 중 O | 전체 보기 |
+## Privacy and portability
 
-## 배포 구조
+Presentation data is stored in the browser and is not uploaded by this project. Clearing browser data also clears the autosaved document, so export important work as JSON.
 
-편집기와 impress.js가 `index.html` 하나에 포함되어 있습니다. 별도의 서버나 빌드 과정 없이 이 파일을 브라우저에서 열어 사용할 수 있습니다.
+Exported presentations include the required impress.js MIT notice. Local assets are embedded in the exported file. YouTube playback and thumbnails still require an internet connection.
 
-## 사용자 콘텐츠
+Users are responsible for the rights to images, videos, fonts, and other content they add or redistribute.
 
-사용자가 삽입한 이미지, 영상, 글꼴 및 기타 콘텐츠의 이용 권한과 공개·재배포 책임은 해당 사용자에게 있습니다. 공개하기 전에 원저작자의 이용 조건을 확인하세요.
+## Browser support
 
-## 라이선스
+Simple Impress Editor targets modern desktop browsers. Chrome, Edge, Safari, and Firefox are recommended. Mobile editing is not currently optimized.
 
-편집기 코드는 [MIT License](LICENSE)로 배포됩니다. 사용자가 작성하거나 삽입한 콘텐츠에는 이 라이선스가 적용되지 않습니다.
+## Project structure
 
-포함된 impress.js 2.0.0의 저작권 및 라이선스 고지는 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)에 있습니다.
+The editor and impress.js runtime are bundled in [`index.html`](index.html) so the project can run without a server or build tool.
+
+Contributions, bug reports, and feature requests are welcome through [Issues](https://github.com/jakalee/simpress/issues) and pull requests.
+
+## License and credits
+
+Simple Impress Editor is released under the [MIT License](LICENSE). User-created content is not covered by the project license.
+
+It bundles [impress.js 2.0.0](https://github.com/impress/impress.js). See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for copyright and license details.
