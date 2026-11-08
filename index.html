@@ -294,7 +294,7 @@ textarea{width:100%;resize:vertical;font-size:12.5px}
  * impress.js
  *
  * impress.js is a presentation tool based on the power of CSS3 transforms and transitions
- * in modern browsers and inspired by the idea behind prezi.com.
+ * in modern browsers.
  *
  *
  * Copyright 2011-2012 Bartek Szopka (@bartaz), 2016-2023 Henrik Ingo (@henrikingo)
@@ -5447,8 +5447,8 @@ function objInner(o, mode, srcOf) {
   }
   if (o.type === 'video') {
     if (mode === 'show') {
-      // 유튜브 재생기는 Referer 가 필요해 file:// 와 blob 에서 오류 153 이 납니다. 공개 페이지를 거쳐 어디서 열어도 재생되게 합니다
-      if (o.yt) return `<iframe src="https://jakalee.github.io/prezi-editor-player/player.html?v=${esc(o.yt)}" allow="autoplay;encrypted-media;fullscreen" allowfullscreen></iframe><a class="vidlink" href="https://www.youtube.com/watch?v=${esc(o.yt)}" target="_blank" rel="noopener">YouTube에서 열기 ↗</a>`;
+      // 로컬 파일에서도 재생되도록 공개된 프로젝트 플레이어를 거쳐 YouTube를 불러옵니다.
+      if (o.yt) return `<iframe src="https://jakalee.github.io/simpress/player.html?v=${esc(o.yt)}" allow="autoplay;encrypted-media;fullscreen" allowfullscreen></iframe><a class="vidlink" href="https://www.youtube.com/watch?v=${esc(o.yt)}" target="_blank" rel="noopener">YouTube에서 열기 ↗</a>`;
       return `<video controls playsinline ${srcOf(o)}></video>`;
     }
     const bg = o.yt ? `background:#111 url(https://img.youtube.com/vi/${esc(o.yt)}/hqdefault.jpg) center/cover` : 'background:#111';
