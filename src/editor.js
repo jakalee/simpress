@@ -647,6 +647,10 @@ function fxProps(o) {
     <label class="row"><span>마우스 올리면</span>${sel('hover', FX_HOVER, o.hover)}</label>
     <label class="row"><span>누르면</span>${sel('click', FX_CLICK, o.click)}</label>${target}
     <label class="row"><span>단계에 들어오면</span>${sel('enter', FX_ENTER, o.enter)}</label>
+    <details class="fxcode"${String(o.enterCode || '').trim() ? ' open' : ''}><summary>단계에 들어오면 자바스크립트 실행 (고급)</summary>
+      <textarea data-p="enterCode" rows="5" spellcheck="false" class="mono code" placeholder="여기에 코드를 입력하세요">${esc(o.enterCode || '')}</textarea>
+      <p class="note">이 객체가 속한 슬라이드(또는 경로 단계)에 들어올 때마다 실행됩니다. ${stepForObject(o) ? '' : '<b class="warn">지금은 어느 슬라이드에도 속하지 않아 실행되지 않습니다.</b>'} 쓸 수 있는 것은 위와 같습니다.</p>
+    </details>
     <label class="row"><span>처음엔 숨김</span><input type="checkbox" data-act="toggleProp" data-arg="fxHidden"${o.fxHidden ? ' checked' : ''}></label>
     ${o.fxHidden ? '<p class="note">다른 객체의 "보이기/숨기기"로 나타나게 하세요. 편집 화면에서는 흐리게 보입니다.</p>' : ''}`;
 }
@@ -724,7 +728,7 @@ function renderLayers() {
   box.innerHTML = [...doc.objects].reverse().map(o => {
     const cls = ['li', sel.includes(o.id) ? 'on' : '', o.hidden ? 'off' : '', o.slide ? 'slide' : ''].filter(Boolean).join(' ');
     const ic = o.slide ? 'slide' : TYPE_ICON[o.type] || 'shape';
-    const fx = [o.hover, o.click, o.enter].some(v => v && v !== 'none') || o.fxHidden ? '<i class="fx" title="인터랙션 있음">⚡</i>' : '';
+    const fx = [o.hover, o.click, o.enter].some(v => v && v !== 'none') || o.fxHidden || String(o.enterCode || '').trim() ? '<i class="fx" title="인터랙션 있음">⚡</i>' : '';
     return `<div class="${cls}" draggable="true" data-id="${o.id}">${icon(ic)}<span class="nm">${esc(objLabel(o))}</span>${fx}`
       + `<button class="${o.locked ? 'set' : ''}" data-act="toggleLock" data-arg="${o.id}" title="${o.locked ? '잠금 풀기' : '잠그기'}">${icon(o.locked ? 'lock' : 'unlock')}</button>`
       + `<button class="${o.hidden ? 'set' : ''}" data-act="toggleHide" data-arg="${o.id}" title="${o.hidden ? '보이기' : '숨기기'}">${icon(o.hidden ? 'eyeoff' : 'eye')}</button></div>`;
@@ -911,9 +915,9 @@ async function openFile(f) {
     const d = parseDocText(await f.text(), f.name);
     /* 남이 만든 파일의 자바스크립트는 발표 때 실행되므로, 출처를 믿을 때만 유지 */
     if (hasCode(d)) {
-      const n = d.objects.filter(o => o.click === 'code' && String(o.clickCode || '').trim()).length;
-      const keep = await ask({ title: '자바스크립트가 들어 있는 파일', msg: `객체 ${n}개에 누르면 실행되는 코드가 있습니다. 직접 만들었거나 믿을 수 있는 파일일 때만 유지하세요. 취소하면 코드를 지우고 엽니다.`, ok: '코드 유지' });
-      if (!keep) d.objects.forEach(o => { if (o.click === 'code') { o.click = 'none'; o.clickCode = ''; } });
+      const n = d.objects.filter(objHasCode).length;
+      const keep = await ask({ title: '자바스크립트가 들어 있는 파일', msg: `객체 ${n}개에 발표 중 실행되는 코드(누르면·단계에 들어오면)가 있습니다. 직접 만들었거나 믿을 수 있는 파일일 때만 유지하세요. 취소하면 코드를 지우고 엽니다.`, ok: '코드 유지' });
+      if (!keep) d.objects.forEach(o => { if (o.click === 'code') { o.click = 'none'; o.clickCode = ''; } o.enterCode = ''; });
     }
     loadDoc(d);
     autosave();

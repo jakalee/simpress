@@ -61,7 +61,9 @@ button,input,select,textarea{font:inherit;color:inherit}
 .kinds button.on{background:var(--ui);box-shadow:0 1px 2px rgba(0,0,0,.14);font-weight:600}
 textarea.code{white-space:pre;tab-size:2;background:#fbfbfd}
 textarea.code::placeholder{font-family:inherit;color:#a2a9b3;font-style:italic}
-.note.warn{color:#c62828;font-weight:600;margin-top:4px}
+.note.warn,.note .warn{color:#c62828;font-weight:600;margin-top:4px}
+.fxcode{margin:4px 0 8px}.fxcode summary{cursor:pointer;color:var(--mute);font-size:12px;padding:4px 0}
+.fxcode[open] summary{color:var(--ink);font-weight:600}
 #props code{font:11px ui-monospace,Menlo,monospace;background:var(--ui2);padding:0 3px;border-radius:3px}
 textarea.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;white-space:pre;overflow-x:auto;tab-size:10}
 .stepper{display:flex;align-items:center;gap:4px}.stepper b{min-width:26px;text-align:center;font-weight:600}
@@ -6689,11 +6691,17 @@ function uiAlert(msg){
   document.body.appendChild(w);b.focus();
 }
 function closeAlert(){var a=document.querySelector('.zc-alert');if(a)a.remove();}
-function runCode(o){
-  if(!(o.getAttribute('data-code')||'').trim()){showErr('누르면 실행할 코드가 비어 있습니다 — 편집기에서 입력하세요');return;}
-  try{new Function('el','api','byName','fx','alert',o.getAttribute('data-code')||'')(o,api,byName,function(el,k){if(el)replay(el,'fx-'+k);},uiAlert);}
+function runCode(o,attr){
+  attr=attr||'data-code';
+  var code=o.getAttribute(attr)||'';
+  if(!code.trim()){showErr('누르면 실행할 코드가 비어 있습니다 — 편집기에서 입력하세요');return;}
+  try{new Function('el','api','byName','fx','alert',code)(o,api,byName,function(el,k){if(el)replay(el,'fx-'+k);},uiAlert);}
   catch(err){console.error(err);showErr(err.message);}
 }
+/* 단계에 들어올 때 실행할 코드 (객체가 속한 단계마다) */
+document.addEventListener('impress:stepenter',function(e){
+  document.querySelectorAll('.o[data-oncode][data-step="'+e.target.id+'"]').forEach(function(el){runCode(el,'data-oncode');});
+});
 
 document.addEventListener('click',function(e){
   if(e.target.closest('.zc-alert'))return;   // 알림창 클릭은 화면 이동으로 넘기지 않음
@@ -6723,7 +6731,8 @@ try { new Function(SHOW_RUNTIME); } catch (err) { console.error('발표 런타�
 const FX_TYPES = ['text', 'shape', 'image', 'table', 'chart'];
 const FX_HOVER = [['none', '없음'], ['grow', '살짝 커지기'], ['lift', '위로 뜨기'], ['tilt', '기울기'], ['glow', '빛나기'], ['dim', '흐리다가 선명하게']];
 const FX_CLICK = [['none', '없음'], ['goto', '슬라이드로 이동'], ['next', '다음 단계'], ['prev', '이전 단계'], ['url', '링크 열기'], ['toggle', '다른 객체 보이기/숨기기'], ['pulse', '두근거리기'], ['shake', '흔들기'], ['code', '자바스크립트 실행']];
-const hasCode = d => d.objects.some(o => o.click === 'code' && String(o.clickCode || '').trim());
+const objHasCode = o => (o.click === 'code' && String(o.clickCode || '').trim()) || String(o.enterCode || '').trim();
+const hasCode = d => d.objects.some(objHasCode);
 const FX_ENTER = [['none', '없음'], ['fade', '나타나기'], ['up', '아래에서 올라오기'], ['left', '왼쪽에서 들어오기'], ['zoom', '커지며 나타나기']];
 
 function usedAssets() {
@@ -6760,6 +6769,7 @@ function buildShowHTML() {
     if (FX_TYPES.includes(o.type)) {
       if (FX_HOVER.some(([k]) => k === o.hover) && o.hover !== 'none') extra += ` data-hover="${o.hover}"`;
       if (FX_ENTER.some(([k]) => k === o.enter) && o.enter !== 'none') extra += ` data-enter="${o.enter}"`;
+      if (String(o.enterCode || '').trim()) extra += ` data-oncode="${esc(o.enterCode)}"`;
       if (FX_CLICK.some(([k]) => k === o.click) && o.click !== 'none') {
         let target = '';
         if (o.click === 'goto') { const i = doc.path.indexOf(o.clickTarget); target = i >= 0 ? `step-${i + 1}` : ''; }
@@ -6864,6 +6874,7 @@ function parseDocText(text, name) {
       if ('clickTarget' in o) o.clickTarget = safeId(o.clickTarget);
       if ('clickUrl' in o) o.clickUrl = /^https?:\/\//i.test(String(o.clickUrl)) ? String(o.clickUrl) : '';
       if ('clickCode' in o) o.clickCode = String(o.clickCode || '');
+      if ('enterCode' in o) o.enterCode = String(o.enterCode || '');
       if ('name' in o) o.name = String(o.name || '');
     });
     data.path = (Array.isArray(data.path) ? data.path : []).map(safeId);
@@ -7532,6 +7543,10 @@ function fxProps(o) {
     <label class="row"><span>마우스 올리면</span>${sel('hover', FX_HOVER, o.hover)}</label>
     <label class="row"><span>누르면</span>${sel('click', FX_CLICK, o.click)}</label>${target}
     <label class="row"><span>단계에 들어오면</span>${sel('enter', FX_ENTER, o.enter)}</label>
+    <details class="fxcode"${String(o.enterCode || '').trim() ? ' open' : ''}><summary>단계에 들어오면 자바스크립트 실행 (고급)</summary>
+      <textarea data-p="enterCode" rows="5" spellcheck="false" class="mono code" placeholder="여기에 코드를 입력하세요">${esc(o.enterCode || '')}</textarea>
+      <p class="note">이 객체가 속한 슬라이드(또는 경로 단계)에 들어올 때마다 실행됩니다. ${stepForObject(o) ? '' : '<b class="warn">지금은 어느 슬라이드에도 속하지 않아 실행되지 않습니다.</b>'} 쓸 수 있는 것은 위와 같습니다.</p>
+    </details>
     <label class="row"><span>처음엔 숨김</span><input type="checkbox" data-act="toggleProp" data-arg="fxHidden"${o.fxHidden ? ' checked' : ''}></label>
     ${o.fxHidden ? '<p class="note">다른 객체의 "보이기/숨기기"로 나타나게 하세요. 편집 화면에서는 흐리게 보입니다.</p>' : ''}`;
 }
@@ -7609,7 +7624,7 @@ function renderLayers() {
   box.innerHTML = [...doc.objects].reverse().map(o => {
     const cls = ['li', sel.includes(o.id) ? 'on' : '', o.hidden ? 'off' : '', o.slide ? 'slide' : ''].filter(Boolean).join(' ');
     const ic = o.slide ? 'slide' : TYPE_ICON[o.type] || 'shape';
-    const fx = [o.hover, o.click, o.enter].some(v => v && v !== 'none') || o.fxHidden ? '<i class="fx" title="인터랙션 있음">⚡</i>' : '';
+    const fx = [o.hover, o.click, o.enter].some(v => v && v !== 'none') || o.fxHidden || String(o.enterCode || '').trim() ? '<i class="fx" title="인터랙션 있음">⚡</i>' : '';
     return `<div class="${cls}" draggable="true" data-id="${o.id}">${icon(ic)}<span class="nm">${esc(objLabel(o))}</span>${fx}`
       + `<button class="${o.locked ? 'set' : ''}" data-act="toggleLock" data-arg="${o.id}" title="${o.locked ? '잠금 풀기' : '잠그기'}">${icon(o.locked ? 'lock' : 'unlock')}</button>`
       + `<button class="${o.hidden ? 'set' : ''}" data-act="toggleHide" data-arg="${o.id}" title="${o.hidden ? '보이기' : '숨기기'}">${icon(o.hidden ? 'eyeoff' : 'eye')}</button></div>`;
@@ -7796,9 +7811,9 @@ async function openFile(f) {
     const d = parseDocText(await f.text(), f.name);
     /* 남이 만든 파일의 자바스크립트는 발표 때 실행되므로, 출처를 믿을 때만 유지 */
     if (hasCode(d)) {
-      const n = d.objects.filter(o => o.click === 'code' && String(o.clickCode || '').trim()).length;
-      const keep = await ask({ title: '자바스크립트가 들어 있는 파일', msg: `객체 ${n}개에 누르면 실행되는 코드가 있습니다. 직접 만들었거나 믿을 수 있는 파일일 때만 유지하세요. 취소하면 코드를 지우고 엽니다.`, ok: '코드 유지' });
-      if (!keep) d.objects.forEach(o => { if (o.click === 'code') { o.click = 'none'; o.clickCode = ''; } });
+      const n = d.objects.filter(objHasCode).length;
+      const keep = await ask({ title: '자바스크립트가 들어 있는 파일', msg: `객체 ${n}개에 발표 중 실행되는 코드(누르면·단계에 들어오면)가 있습니다. 직접 만들었거나 믿을 수 있는 파일일 때만 유지하세요. 취소하면 코드를 지우고 엽니다.`, ok: '코드 유지' });
+      if (!keep) d.objects.forEach(o => { if (o.click === 'code') { o.click = 'none'; o.clickCode = ''; } o.enterCode = ''; });
     }
     loadDoc(d);
     autosave();

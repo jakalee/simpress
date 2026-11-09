@@ -102,11 +102,17 @@ function uiAlert(msg){
   document.body.appendChild(w);b.focus();
 }
 function closeAlert(){var a=document.querySelector('.zc-alert');if(a)a.remove();}
-function runCode(o){
-  if(!(o.getAttribute('data-code')||'').trim()){showErr('누르면 실행할 코드가 비어 있습니다 — 편집기에서 입력하세요');return;}
-  try{new Function('el','api','byName','fx','alert',o.getAttribute('data-code')||'')(o,api,byName,function(el,k){if(el)replay(el,'fx-'+k);},uiAlert);}
+function runCode(o,attr){
+  attr=attr||'data-code';
+  var code=o.getAttribute(attr)||'';
+  if(!code.trim()){showErr('누르면 실행할 코드가 비어 있습니다 — 편집기에서 입력하세요');return;}
+  try{new Function('el','api','byName','fx','alert',code)(o,api,byName,function(el,k){if(el)replay(el,'fx-'+k);},uiAlert);}
   catch(err){console.error(err);showErr(err.message);}
 }
+/* 단계에 들어올 때 실행할 코드 (객체가 속한 단계마다) */
+document.addEventListener('impress:stepenter',function(e){
+  document.querySelectorAll('.o[data-oncode][data-step="'+e.target.id+'"]').forEach(function(el){runCode(el,'data-oncode');});
+});
 
 document.addEventListener('click',function(e){
   if(e.target.closest('.zc-alert'))return;   // 알림창 클릭은 화면 이동으로 넘기지 않음
@@ -136,7 +142,8 @@ try { new Function(SHOW_RUNTIME); } catch (err) { console.error('발표 런타�
 const FX_TYPES = ['text', 'shape', 'image', 'table', 'chart'];
 const FX_HOVER = [['none', '없음'], ['grow', '살짝 커지기'], ['lift', '위로 뜨기'], ['tilt', '기울기'], ['glow', '빛나기'], ['dim', '흐리다가 선명하게']];
 const FX_CLICK = [['none', '없음'], ['goto', '슬라이드로 이동'], ['next', '다음 단계'], ['prev', '이전 단계'], ['url', '링크 열기'], ['toggle', '다른 객체 보이기/숨기기'], ['pulse', '두근거리기'], ['shake', '흔들기'], ['code', '자바스크립트 실행']];
-const hasCode = d => d.objects.some(o => o.click === 'code' && String(o.clickCode || '').trim());
+const objHasCode = o => (o.click === 'code' && String(o.clickCode || '').trim()) || String(o.enterCode || '').trim();
+const hasCode = d => d.objects.some(objHasCode);
 const FX_ENTER = [['none', '없음'], ['fade', '나타나기'], ['up', '아래에서 올라오기'], ['left', '왼쪽에서 들어오기'], ['zoom', '커지며 나타나기']];
 
 function usedAssets() {
@@ -173,6 +180,7 @@ function buildShowHTML() {
     if (FX_TYPES.includes(o.type)) {
       if (FX_HOVER.some(([k]) => k === o.hover) && o.hover !== 'none') extra += ` data-hover="${o.hover}"`;
       if (FX_ENTER.some(([k]) => k === o.enter) && o.enter !== 'none') extra += ` data-enter="${o.enter}"`;
+      if (String(o.enterCode || '').trim()) extra += ` data-oncode="${esc(o.enterCode)}"`;
       if (FX_CLICK.some(([k]) => k === o.click) && o.click !== 'none') {
         let target = '';
         if (o.click === 'goto') { const i = doc.path.indexOf(o.clickTarget); target = i >= 0 ? `step-${i + 1}` : ''; }
@@ -277,6 +285,7 @@ function parseDocText(text, name) {
       if ('clickTarget' in o) o.clickTarget = safeId(o.clickTarget);
       if ('clickUrl' in o) o.clickUrl = /^https?:\/\//i.test(String(o.clickUrl)) ? String(o.clickUrl) : '';
       if ('clickCode' in o) o.clickCode = String(o.clickCode || '');
+      if ('enterCode' in o) o.enterCode = String(o.enterCode || '');
       if ('name' in o) o.name = String(o.name || '');
     });
     data.path = (Array.isArray(data.path) ? data.path : []).map(safeId);
