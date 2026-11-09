@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>simpress</title>
+<style>/*INLINE:css*/</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-frame" viewBox="0 0 24 24"><path d="M8 4H4v16h4M16 4h4v16h-4"/></symbol>
+  <symbol id="i-text" viewBox="0 0 24 24"><path d="M5 6V4h14v2M12 4v16M9 20h6"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m4 18 5-5 4 4 3-3 4 4"/></symbol>
+  <symbol id="i-shape" viewBox="0 0 24 24"><circle cx="8.5" cy="8.5" r="5.5"/><rect x="11" y="11" width="10" height="10" rx="1.5"/></symbol>
+  <symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9 5 3-5 3z"/></symbol>
+  <symbol id="i-path" viewBox="0 0 24 24"><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="6" r="2.5"/><path d="M7.5 18H15a3.5 3.5 0 0 0 0-7H9a3.5 3.5 0 0 1 0-7h7.5"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 7 4 12l5 5M4 12h11a5 5 0 0 1 0 10h-3" transform="translate(0 -4)"/></symbol>
+  <symbol id="i-redo" viewBox="0 0 24 24"><path d="m15 7 5 5-5 5M20 12H9a5 5 0 0 0 0 10h3" transform="translate(0 -4)"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-export" viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5M4 14v6h16v-6"/></symbol>
+  <symbol id="i-fit" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="1.5"/><path d="M8 12h8M8 12l2-2M8 12l2 2M16 12l-2-2M16 12l-2 2"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4V4h11v1"/></symbol>
+  <symbol id="i-front" viewBox="0 0 24 24"><rect x="4" y="10" width="10" height="10" rx="1.5"/><path d="M14 4h6v6M20 4l-7 7"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><rect x="10" y="4" width="10" height="10" rx="1.5"/><path d="M10 20H4v-6M4 20l7-7"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-eyeoff" viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4.1M6.6 6.6C3.6 8.4 2 12 2 12s3.6 7 10 7a9.8 9.8 0 0 0 5.4-1.6M9.9 9.9a3 3 0 0 0 4.2 4.2"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+  <symbol id="i-unlock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></symbol>
+  <symbol id="i-table" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9.5h18M3 15h18M9.5 4v16"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V4M4 20h16"/><path d="M8 16v-5M12 16V8M16 16v-7"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24"><path d="M4 20l1-4L16 5l3 3L8 19z"/><path d="M14 7l3 3"/></symbol>
+  <symbol id="i-connect" viewBox="0 0 24 24"><rect x="2.5" y="3.5" width="7" height="6" rx="1.2"/><rect x="14.5" y="14.5" width="7" height="6" rx="1.2"/><path d="M9.5 6.5H12v11h2.5"/></symbol>
+  <symbol id="i-slide" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="1.5"/><path d="M8 21h8M12 17v4"/></symbol>
+</defs></svg>
+
+<nav id="menubar" aria-label="메뉴"></nav>
+
+<header id="topbar">
+  <input id="doc-title" aria-label="문서 제목" spellcheck="false">
+  <i class="sep"></i>
+  <details class="dd"><summary class="tb"><svg class="ic"><use href="#i-frame"/></svg>추가<svg class="ic chev"><use href="#i-chev"/></svg></summary>
+    <div class="pop">
+      <button data-act="newSlide"><b>새 슬라이드 (16:9)</b></button>
+      <hr>
+      <button data-act="frame" data-arg="bracket">대괄호 프레임</button>
+      <button data-act="frame" data-arg="circle">원 프레임</button>
+      <button data-act="frame" data-arg="rect">사각 프레임</button>
+      <button data-act="frame" data-arg="hidden">숨은 프레임</button>
+    </div></details>
+  <button class="tb" data-act="text"><svg class="ic"><use href="#i-text"/></svg>텍스트</button>
+  <details class="dd"><summary class="tb"><svg class="ic"><use href="#i-image"/></svg>이미지<svg class="ic chev"><use href="#i-chev"/></svg></summary>
+    <div class="pop"><button data-act="image">파일에서 (여러 장 가능)</button><button data-act="imageURL">주소로 넣기</button></div></details>
+  <details class="dd" id="dd-shape"><summary class="tb"><svg class="ic"><use href="#i-shape"/></svg>도형<svg class="ic chev"><use href="#i-chev"/></svg></summary>
+    <div class="pop shapes" id="shape-pop"></div></details>
+  <button class="tb" data-act="table" title="표"><svg class="ic"><use href="#i-table"/></svg>표</button>
+  <button class="tb" data-act="chart" title="차트"><svg class="ic"><use href="#i-chart"/></svg>차트</button>
+  <details class="dd"><summary class="tb"><svg class="ic"><use href="#i-video"/></svg>영상<svg class="ic chev"><use href="#i-chev"/></svg></summary>
+    <div class="pop"><button data-act="videoURL">YouTube·영상 주소</button><button data-act="videoFile">영상 파일</button></div></details>
+  <button class="tb" id="btn-connect" data-act="connect" title="연결선: 두 객체를 차례로 누르면 이어지고, 객체를 옮기면 따라옵니다"><svg class="ic"><use href="#i-connect"/></svg>연결선</button>
+  <button class="tb" id="btn-pen" data-act="pen" title="펜: 끌어서 자유롭게 그립니다"><svg class="ic"><use href="#i-pen"/></svg>펜</button>
+  <i class="sep"></i>
+  <button class="tb" id="btn-path" data-act="path" title="객체를 차례로 눌러 발표 순서를 연결합니다"><svg class="ic"><use href="#i-path"/></svg>경로 잇기</button>
+  <i class="sep"></i>
+  <button class="tb icon" id="btn-undo" data-act="undo" title="실행 취소 (⌘Z)" disabled><svg class="ic"><use href="#i-undo"/></svg></button>
+  <button class="tb icon" id="btn-redo" data-act="redo" title="다시 실행 (⇧⌘Z)" disabled><svg class="ic"><use href="#i-redo"/></svg></button>
+  <span id="save-state"></span>
+  <span class="grow"></span>
+  <button class="tb" data-act="setOverview" title="지금 보이는 화면을 발표의 시작·전체 화면으로 지정합니다"><svg class="ic"><use href="#i-target"/></svg>overview 지정</button>
+  <button class="tb primary" data-act="run" title="테스트 실행 (⌘↵)"><svg class="ic"><use href="#i-play"/></svg>테스트 실행</button>
+  <button class="tb" data-act="exportHTML"><svg class="ic"><use href="#i-export"/></svg>HTML 내보내기</button>
+</header>
+
+<aside id="pathpanel">
+  <div class="ltabs" role="tablist">
+    <button id="tab-slides" class="on" data-act="leftTab" data-arg="slides" role="tab">슬라이드</button>
+    <button id="tab-layers" data-act="leftTab" data-arg="layers" role="tab">레이어</button>
+  </div>
+  <div id="pane-slides" class="pane">
+    <div id="path-list"></div>
+    <div class="pane-b">
+      <button class="wide" data-act="newSlide">＋ 새 슬라이드</button>
+      <button class="wide addview" data-act="addView">＋ 현재 화면을 경로에 추가</button>
+    </div>
+  </div>
+  <div id="pane-layers" class="pane" hidden>
+    <div id="layer-list"></div>
+    <p class="note lnote">끌어서 순서 변경 · 더블클릭 이름 바꾸기 · 우클릭 메뉴</p>
+  </div>
+</aside>
+
+<section id="stage">
+  <div id="grid"></div>
+  <div id="world"></div>
+  <svg id="pathlayer"></svg>
+  <div id="selbox" hidden>
+    <i data-h="nw"></i><i data-h="n"></i><i data-h="ne"></i><i data-h="e"></i><i data-h="se"></i><i data-h="s"></i><i data-h="sw"></i><i data-h="w"></i>
+  </div>
+  <svg id="zebra" viewBox="-88 -88 176 176" width="150" height="150" hidden>
+    <circle class="z-rot" data-z="rotate" r="75" fill="none"><title>회전</title></circle>
+    <circle class="z-scale" data-z="scale" r="50" fill="none"><title>크기</title></circle>
+    <circle class="z-move" data-z="move" r="35"><title>이동</title></circle>
+    <g class="z-marks">
+      <path d="M-5.5 0h11M0-5.5v11" transform="translate(35.5 -35.5)"/>
+      <path d="M-5.5 0h11" transform="translate(-35.5 35.5)"/>
+      <path d="M0-10v20M-10 0h20M0-10l-3 3M0-10l3 3M0 10l-3-3M0 10l3-3M-10 0l3-3M-10 0l3 3M10 0l-3-3M10 0l-3 3" class="dark"/>
+      <path d="M-14-73a75 75 0 0 1 28 0M14-73l-5-5M14-73l-6 3M14 73a75 75 0 0 1-28 0M-14 73l5 5M-14 73l6-3"/>
+    </g>
+    <g class="chip" data-z="tx" transform="translate(0 -106)"><title>X축 회전 (위아래로 끌기)</title><circle r="13"/><text y="4.5">X</text></g>
+    <g class="chip" data-z="ty" transform="translate(106 0)"><title>Y축 회전 (좌우로 끌기)</title><circle r="13"/><text y="4.5">Y</text></g>
+    <g class="chip" data-z="tz" transform="translate(0 106)"><title>Z축 깊이 (위아래로 끌기)</title><circle r="13"/><text y="4.5">Z</text></g>
+  </svg>
+  <div id="band" hidden></div>
+  <div id="mode-hint" class="ui" hidden></div>
+  <div id="readout" hidden></div>
+  <div id="path-hint" class="ui" hidden>객체나 프레임을 차례로 누르면 경로가 이어집니다 · 번호를 끌어 바꾸고, 빈 곳에 놓으면 빠집니다 · <b>+</b>를 끌면 사이에 넣습니다 · Esc로 끝내기</div>
+  <div id="zoombar" class="ui">
+    <button data-act="zoomOut" title="축소">−</button><span id="zoom-label">100%</span><button data-act="zoomIn" title="확대">+</button>
+    <button data-act="fit" title="전체 보기"><svg class="ic"><use href="#i-fit"/></svg></button>
+    <button id="rot-reset" data-act="resetRot" title="화면 회전 풀기" hidden>↻ 0°</button>
+  </div>
+  <div id="minimap-box" class="ui"><canvas id="minimap"></canvas></div>
+</section>
+
+<aside id="props"></aside>
+
+<div id="toast" role="status"></div>
+<div id="showlayer" hidden>
+  <iframe id="showframe" title="발표 미리보기" allow="autoplay;encrypted-media;fullscreen"></iframe>
+  <button id="show-close" data-act="closeShow" title="닫기 (Esc)">×</button>
+</div>
+<dialog id="dlg"><form method="dialog">
+  <h3 id="dlg-title"></h3><p id="dlg-msg"></p><input id="dlg-input" autocomplete="off">
+  <div class="dlg-b"><button value="cancel" class="tb">취소</button><button value="ok" class="tb primary" id="dlg-ok">확인</button></div>
+</form></dialog>
+<dialog id="helpdlg"><form method="dialog">
+  <h3>키보드 단축키</h3><dl class="help" id="help-list"></dl>
+  <div class="dlg-b"><button value="ok" class="tb primary">닫기</button></div>
+</form></dialog>
+<div id="ctx" class="pop" role="menu" hidden></div>
+<input type="file" id="file-image" accept="image/*" multiple hidden>
+<input type="file" id="file-video" accept="video/*" hidden>
+<input type="file" id="file-doc" accept=".json,.html,.htm" hidden>
+
+<script type="text/plain" id="impress-src">/*INLINE:impress*/</script>
+<script>/*INLINE:js*/</script>
+</body>
+</html>

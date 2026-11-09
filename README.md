@@ -30,6 +30,13 @@
 - Presenter notes, slide navigator, and progress indicator
 - Autosave, undo/redo, and JSON import/export
 - Standalone HTML export with embedded local assets
+- Menu bar (File, Edit, Insert, Slide, Layer, View, Help) and a shortcut sheet (`?`)
+- 16:9 slides (add, duplicate, delete, reorder) and a layer panel (stacking order, lock, hide)
+- 24 shapes (polygons, stars, donuts, arrows, callouts, flowchart) with text inside
+- Tables with in-place cell editing, Tab navigation, and row/column controls
+- 8 SVG chart types — paste ranges from Excel, automatic thinning of large data, entrance animation
+- Connectors that follow their objects (straight, elbow, curved) and a freehand pen
+- Interactions — hover effects, click actions (go to slide, open link, show/hide, run JavaScript), entrance effects
 
 ## Privacy and portability
 
@@ -46,6 +53,10 @@ Simple Impress Editor targets modern desktop browsers. Chrome, Edge, Safari, and
 ## Project structure
 
 The editor and impress.js runtime are bundled in [`index.html`](index.html) so the project can run without a server or build tool.
+
+`index.html` is generated from `src/` (editor code) and `vendor/impress.js`. To change the code, edit `src/` and run `python3 build.py`; direct edits to `index.html` are overwritten by the next build.
+
+Click-to-run JavaScript is never executed in the editor, and opening someone else's file asks whether to keep its code. Exported HTML runs that code in whatever browser opens it, so treat presentation files from unknown sources with care.
 
 Contributions, bug reports, and feature requests are welcome through [Issues](https://github.com/jakalee/simpress/issues) and pull requests.
 
