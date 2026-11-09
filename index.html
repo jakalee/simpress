@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>simpress</title>
+<!-- 3D 모델용 three.js: 버전 고정 CDN, 처음 쓸 때만 불러옴 -->
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/"}}</script>
 <style>:root{--c-bg:#fff;--c-title:#16324f;--c-body:#46566a;--c-accent:#2f7fd1}
 *,*::before,*::after{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -62,6 +64,20 @@ button,input,select,textarea{font:inherit;color:inherit}
 textarea.code{white-space:pre;tab-size:2;background:#fbfbfd}
 textarea.code::placeholder{font-family:inherit;color:#a2a9b3;font-style:italic}
 .note.warn,.note .warn{color:#c62828;font-weight:600;margin-top:4px}
+.parts{max-height:240px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:2px;margin-bottom:6px}
+.pt{display:flex;align-items:center;gap:6px;height:28px;padding:0 4px;border-radius:5px;font-size:12px}
+.pt:hover{background:var(--ui2)}.pt.off span{opacity:.4;text-decoration:line-through}
+.pt span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pt button{display:flex;width:22px;height:22px;padding:0;border:0;background:none;cursor:pointer;color:var(--mute);align-items:center;justify-content:center}
+.pt button .ic{width:14px;height:14px}
+.pt input[type=color]{width:22px;height:20px;padding:0;border:1px solid var(--line);border-radius:4px;background:none;cursor:pointer}
+.pt input.unset{opacity:.35}
+.bgset{display:flex;align-items:center;gap:6px}
+#mdlg{border:0;border-radius:14px;padding:16px;box-shadow:0 18px 50px rgba(20,30,50,.3);max-width:calc(100vw - 32px)}
+#mdlg::backdrop{background:rgba(20,28,40,.45)}
+.mv-head{display:flex;align-items:baseline;gap:12px;margin-bottom:10px}
+#mv-host{position:relative;border-radius:10px;background:repeating-conic-gradient(#f2f4f7 0% 25%,#fff 0% 50%) 0 0/24px 24px;overflow:hidden}
+#mv-host .mv-wait{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;margin:0}
 .fxcode{margin:4px 0 8px}.fxcode summary{cursor:pointer;color:var(--mute);font-size:12px;padding:4px 0}
 .fxcode[open] summary{color:var(--ink);font-weight:600}
 #props code{font:11px ui-monospace,Menlo,monospace;background:var(--ui2);padding:0 3px;border-radius:3px}
@@ -243,6 +259,8 @@ textarea{width:100%;resize:vertical;font-size:12.5px}
   <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
   <symbol id="i-unlock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></symbol>
   <symbol id="i-table" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9.5h18M3 15h18M9.5 4v16"/></symbol>
+  <symbol id="i-cube" viewBox="0 0 24 24"><path d="M12 2.5 3.5 7v10l8.5 4.5 8.5-4.5V7z"/><path d="M3.5 7 12 11.5 20.5 7M12 11.5v10"/></symbol>
+  <symbol id="i-sim" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.2"/><ellipse cx="12" cy="12" rx="9.5" ry="4"/><ellipse cx="12" cy="12" rx="9.5" ry="4" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="9.5" ry="4" transform="rotate(120 12 12)"/></symbol>
   <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V4M4 20h16"/><path d="M8 16v-5M12 16V8M16 16v-7"/></symbol>
   <symbol id="i-pen" viewBox="0 0 24 24"><path d="M4 20l1-4L16 5l3 3L8 19z"/><path d="M14 7l3 3"/></symbol>
   <symbol id="i-connect" viewBox="0 0 24 24"><rect x="2.5" y="3.5" width="7" height="6" rx="1.2"/><rect x="14.5" y="14.5" width="7" height="6" rx="1.2"/><path d="M9.5 6.5H12v11h2.5"/></symbol>
@@ -270,6 +288,7 @@ textarea{width:100%;resize:vertical;font-size:12.5px}
     <div class="pop shapes" id="shape-pop"></div></details>
   <button class="tb" data-act="table" title="표"><svg class="ic"><use href="#i-table"/></svg>표</button>
   <button class="tb" data-act="chart" title="차트"><svg class="ic"><use href="#i-chart"/></svg>차트</button>
+  <button class="tb" data-act="model" title="3D 모델 (GLB · STL · OBJ · STEP · IGES)"><svg class="ic"><use href="#i-cube"/></svg>3D</button>
   <details class="dd"><summary class="tb"><svg class="ic"><use href="#i-video"/></svg>영상<svg class="ic chev"><use href="#i-chev"/></svg></summary>
     <div class="pop"><button data-act="videoURL">YouTube·영상 주소</button><button data-act="videoFile">영상 파일</button></div></details>
   <button class="tb" id="btn-connect" data-act="connect" title="연결선: 두 객체를 차례로 누르면 이어지고, 객체를 옮기면 따라옵니다"><svg class="ic"><use href="#i-connect"/></svg>연결선</button>
@@ -353,6 +372,12 @@ textarea{width:100%;resize:vertical;font-size:12.5px}
   <div class="dlg-b"><button value="ok" class="tb primary">닫기</button></div>
 </form></dialog>
 <div id="ctx" class="pop" role="menu" hidden></div>
+<dialog id="mdlg">
+  <div class="mv-head"><b>3D 미리보기</b><span class="note">드래그: 돌리기 · 휠: 확대·축소</span></div>
+  <div id="mv-host"></div>
+  <div class="dlg-b"><button class="tb" data-mv="cancel">닫기</button><button class="tb primary" data-mv="save">이 각도로 저장</button></div>
+</dialog>
+<input type="file" id="file-model" accept=".glb,.gltf,.stl,.obj,.step,.stp,.iges,.igs" hidden>
 <input type="file" id="file-image" accept="image/*" multiple hidden>
 <input type="file" id="file-video" accept="video/*" hidden>
 <input type="file" id="file-doc" accept=".json,.html,.htm" hidden>
@@ -5432,6 +5457,9 @@ const OBJ_CSS = `
 .tbl.stripe tr:nth-child(even) td{background:rgba(128,136,150,.12)}
 .tbl td:empty::after,.tbl th:empty::after{content:'\\200b'}
 .o-chart text{white-space:pre}
+.o-model .mv-snap{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.o-model.mv-on .mv-snap{visibility:hidden}
+.o-model .mv-wait{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4%;border:2px dashed rgba(120,128,140,.5);border-radius:12px;color:rgba(120,128,140,.9);font:28px sans-serif}
 .o-connector,.o-ink{pointer-events:none}.o-connector .hit,.o-ink .hit{pointer-events:stroke}
 .o-chart.play .ca{animation:.75s cubic-bezier(.2,.8,.2,1) both}
 .o-chart.play .cb.ca{transform-box:fill-box;transform-origin:50% 100%;animation-name:chUp}
@@ -5463,6 +5491,7 @@ function makeObj(type, props) {
   if (type === 'table') Object.assign(base, { rows: [['항목', '내용', '비고'], ['', '', ''], ['', '', ''], ['', '', '']], head: true, stripe: true, fs: 30, color: null, fill: null, stroke: null, align: 'left', font: 'sans' });
   if (type === 'chart') Object.assign(base, { kind: 'bar', title: '', fs: 28, font: 'sans', legend: true, labels: false, grid: true, anim: true,
     data: [['항목', '2024', '2025'], ['1분기', '42', '55'], ['2분기', '58', '61'], ['3분기', '49', '72'], ['4분기', '66', '80']] });
+  if (type === 'model') Object.assign(base, { asset: null, srcName: '', thumbA: null, thumbSig: '', partNames: [], bg: null, spin: true, speed: 1, orbit: true, anim: true, yaw: 30, pitch: 20, zoom: 1, exposure: 1, parts: {} });
   if (type === 'connector') Object.assign(base, { from: null, to: null, route: 'elbow', stroke: null, sw: 6, head: 'end', dash: false, d: '' });
   if (type === 'ink') Object.assign(base, { d: '', stroke: null, sw: 6 });
   if (type === 'frame') Object.assign(base, { frame: 'bracket', color: null, fill: null, notes: '' });
@@ -5606,6 +5635,12 @@ function objInner(o, mode, srcOf) {
   if (o.type === 'table') return tableHTML(o);
   if (o.type === 'chart') return chartSVG(o);
   if (o.type === 'connector') return connectorSVG(o);
+  if (o.type === 'model') {
+    /* 편집 화면·썸네일은 스냅샷, 발표 화면은 스냅샷 위에 실시간 캔버스가 얹힘 (오프라인이면 스냅샷 그대로) */
+    const src = !o.thumbA ? '' : mode === 'show' ? `data-a="${esc(o.thumbA)}"` : `src="${esc(assetURL[o.thumbA] || '')}"`;
+    return src ? `<img class="mv-snap" alt="" draggable="false" ${src}>`
+      : `<div class="mv-wait"><svg viewBox="0 0 24 24" width="22%" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="M3 7l9 5 9-5M12 12v10"/></svg><span>3D 모델 준비 중…</span></div>`;
+  }
   if (o.type === 'ink') {
     const c = esc(o.stroke || 'var(--c-title)');
     return `<svg viewBox="0 0 ${o.w} ${o.h}"><path class="hit" d="${esc(o.d)}" fill="none" stroke="transparent" stroke-width="${o.sw + 16}" stroke-linecap="round"/><path d="${esc(o.d)}" fill="none" stroke="${c}" stroke-width="${o.sw}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -5703,7 +5738,7 @@ function overviewRegion() {
 const SHAPE_NAMES = { rect: '사각형', ellipse: '원', triangle: '삼각형', diamond: '마름모', polygon: '다각형', star: '별', cross: '십자', pie: '부채꼴', donut: '도넛',
   arrow: '화살표', arrow2: '좌우 화살표', chevron: '갈매기형', parallelogram: '평행사변형', trapezoid: '사다리꼴', callout: '설명선', terminal: '시작·끝', document: '문서', line: '선' };
 const plainText = html => (new DOMParser().parseFromString(html || '', 'text/html').body.textContent || '').trim();
-const TYPE_NAMES = { image: '이미지', video: '영상', table: '표', chart: '차트', connector: '연결선', ink: '그리기' };
+const TYPE_NAMES = { image: '이미지', video: '영상', table: '표', chart: '차트', connector: '연결선', ink: '그리기', model: '3D 모델', sim: '시뮬레이션' };
 /* 레이어 목록에 보일 이름: 사용자가 붙인 이름 → 글 내용 → 종류 */
 function objLabel(o) {
   if (o.name) return o.name;
@@ -5711,6 +5746,7 @@ function objLabel(o) {
   if (o.type === 'frame') return o.slide ? '슬라이드' : '프레임';
   if (o.type === 'shape') return plainText(o.text).slice(0, 30) || SHAPE_NAMES[o.shape] || '도형';
   if (o.type === 'table') return plainText((o.rows[0] || []).join(' · ')).slice(0, 30) || '표';
+  if (o.type === 'model') return o.srcName ? o.srcName.replace(/\.[^.]+$/, '') : '3D 모델';
   if (o.type === 'chart') return o.title || (CHART_KINDS.find(k => k[0] === o.kind) || ['', ''])[1] + ' 차트';
   return TYPE_NAMES[o.type] || o.type;
 }
@@ -5906,6 +5942,284 @@ function chartSVG(o) {
   return `<svg viewBox="0 0 ${w} ${h}" font-family="${font}">${out}</svg>`;
 }
 
+/* model3d.js — 3D 모델 객체 (three.js).
+   · 모든 형식은 불러올 때 GLB 하나로 바꿔 저장합니다 (STEP/IGES/STL/OBJ → GLB).
+   · 편집 화면에는 스냅샷 이미지만 보여 줍니다 (WebGL 하나를 돌려 쓰므로 모델이 많아도 안전).
+   · 발표 화면에서는 지금 슬라이드의 모델만 실시간으로 돌리고, 나가면 WebGL을 해제합니다.
+   라이브러리는 버전을 고정한 CDN에서 처음 쓸 때만 불러옵니다. */
+const MV = {
+  three: 'https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js',
+  addons: 'https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/',
+  draco: 'https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/libs/draco/gltf/',
+  occt: 'https://cdn.jsdelivr.net/npm/occt-import-js@0.0.23/dist/',
+};
+const MODEL_EXT = ['glb', 'gltf', 'stl', 'obj', 'step', 'stp', 'iges', 'igs'];
+
+/* ── 공유: 편집기와 발표 화면 양쪽에서 쓰는 함수 (발표 파일에는 toString()으로 들어감) ── */
+function mvCfg(o) {
+  return { w: o.w, h: o.h, bg: o.bg || null, spin: !!o.spin, speed: o.speed ?? 1, anim: o.anim !== false, yaw: o.yaw ?? 30, pitch: o.pitch ?? 20, zoom: o.zoom || 1, exposure: o.exposure ?? 1, parts: o.parts || {} };
+}
+async function mvLibs() {
+  if (!window.__mvLibs) window.__mvLibs = Promise.all([
+    import('three'), import('three/addons/loaders/GLTFLoader.js'), import('three/addons/loaders/DRACOLoader.js'),
+    import('three/addons/environments/RoomEnvironment.js'), import('three/addons/controls/OrbitControls.js'),
+  ]).then(([T, G, D, R, O]) => ({ THREE: T, GLTFLoader: G.GLTFLoader, DRACOLoader: D.DRACOLoader, RoomEnvironment: R.RoomEnvironment, OrbitControls: O.OrbitControls }));
+  return window.__mvLibs;
+}
+async function mvParse(buf, dracoPath) {
+  const L = await mvLibs(), loader = new L.GLTFLoader(), draco = new L.DRACOLoader();
+  draco.setDecoderPath(dracoPath); loader.setDRACOLoader(draco);
+  try { return await new Promise((res, rej) => loader.parse(buf, '', res, rej)); }
+  finally { draco.dispose(); }
+}
+/* 장면 구성: 모델 중심을 원점에, 카메라는 각도(yaw·pitch)·확대(zoom)로. 부품별 숨김·색·투명도 적용 */
+function mvStage(L, gltf, cfg, w, h, renderer) {
+  const T = L.THREE, scene = new T.Scene(), model = gltf.scene;
+  const pm = new T.PMREMGenerator(renderer);
+  scene.environment = pm.fromScene(new L.RoomEnvironment(), 0.04).texture; pm.dispose();
+  scene.background = cfg.bg ? new T.Color(cfg.bg) : null;
+  model.position.set(0, 0, 0); model.rotation.set(0, 0, 0); model.updateMatrixWorld(true);
+  const box = new T.Box3().setFromObject(model), c = box.getCenter(new T.Vector3());
+  const r = box.isEmpty() ? 1 : box.getBoundingSphere(new T.Sphere()).radius || 1;
+  model.position.sub(c);
+  const pivot = new T.Group(); pivot.add(model); scene.add(pivot);
+  const sun = new T.DirectionalLight(0xffffff, 1.4); sun.position.set(r * 2, r * 3, r * 2); scene.add(sun);
+  scene.add(new T.HemisphereLight(0xffffff, 0x50565f, 0.5));
+  const cam = new T.PerspectiveCamera(35, w / h, r / 200, r * 200);
+  mvAim(cam, cfg, r);
+  const meshes = [];
+  model.traverse(m => { if (m.isMesh) meshes.push(m); });
+  meshes.forEach((m, i) => {
+    if (!m.userData.mat0) m.userData.mat0 = m.material;
+    const p = cfg.parts[i];
+    m.visible = !(p && p.h);
+    m.material = m.userData.mat0;
+    if (p && (p.c || (p.o != null && p.o < 1))) {
+      const mt = Array.isArray(m.material) ? m.material.map(x => x.clone()) : m.material.clone();
+      [].concat(mt).forEach(x => { if (p.c && x.color) x.color.set(p.c); if (p.o != null && p.o < 1) { x.transparent = true; x.opacity = p.o; x.depthWrite = false; } });
+      m.material = mt;
+    }
+  });
+  renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = cfg.exposure;
+  renderer.outputColorSpace = T.SRGBColorSpace;
+  let mixer = null;
+  if (cfg.anim && gltf.animations && gltf.animations.length) { mixer = new T.AnimationMixer(model); gltf.animations.forEach(a => mixer.clipAction(a).play()); }
+  return { scene, cam, pivot, r, meshes, mixer };
+}
+function mvAim(cam, cfg, r) {
+  const yaw = cfg.yaw * Math.PI / 180, pitch = cfg.pitch * Math.PI / 180;
+  const d = r / Math.sin(cam.fov * Math.PI / 360) / (cfg.zoom || 1);
+  cam.position.set(d * Math.cos(pitch) * Math.sin(yaw), d * Math.sin(pitch), d * Math.cos(pitch) * Math.cos(yaw));
+  cam.lookAt(0, 0, 0); cam.updateProjectionMatrix();
+}
+/* 실시간 보기: host 안에 캔버스를 만들어 돌림. stop()으로 WebGL을 반드시 해제 */
+function mvLive(L, gltf, cfg, host, pixelRatio, opts) {
+  const T = L.THREE, renderer = new T.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(pixelRatio); renderer.setSize(cfg.w, cfg.h, false);
+  const cv = renderer.domElement;
+  cv.className = 'mv-canvas'; cv.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;display:block';
+  host.appendChild(cv);
+  const S = mvStage(L, gltf, cfg, cfg.w, cfg.h, renderer);
+  let ctl = null;
+  if (opts.orbit) {
+    ctl = new L.OrbitControls(S.cam, cv);
+    ctl.enableDamping = true; ctl.enablePan = !!opts.pan; ctl.target.set(0, 0, 0);
+    ctl.autoRotate = cfg.spin && !opts.noSpin; ctl.autoRotateSpeed = cfg.speed * 2;
+  }
+  const clock = new T.Clock();
+  renderer.setAnimationLoop(() => {
+    const dt = clock.getDelta();
+    if (S.mixer) S.mixer.update(dt);
+    if (ctl) ctl.update(); else if (cfg.spin && !opts.noSpin) S.pivot.rotation.y += dt * cfg.speed * 0.5;
+    renderer.render(S.scene, S.cam);
+  });
+  return {
+    S,
+    /* 지금 카메라 위치를 각도·확대값으로 (미리보기에서 '이 각도로 저장') */
+    view() {
+      const p = S.cam.position, d = p.length();
+      return { yaw: Math.round(Math.atan2(p.x, p.z) * 180 / Math.PI), pitch: Math.round(Math.asin(p.y / d) * 180 / Math.PI), zoom: +(S.r / Math.sin(S.cam.fov * Math.PI / 360) / d).toFixed(3) };
+    },
+    stop() { renderer.setAnimationLoop(null); if (ctl) ctl.dispose(); renderer.dispose(); renderer.forceContextLoss(); cv.remove(); },
+  };
+}
+
+/* ── 편집기 전용 ── */
+const mvCache = {};   // 자산 id → 파싱한 glTF (스냅샷용)
+const mvGLTF = id => (mvCache[id] = mvCache[id] || fetch(doc.assets[id]).then(r => r.arrayBuffer()).then(b => mvParse(b, MV.draco)));
+let mvSnapRenderer = null;
+async function modelSnapshot(o) {
+  const L = await mvLibs(), g = await mvGLTF(o.asset);
+  const k = Math.min(1, 900 / Math.max(o.w, o.h)), w = Math.round(o.w * k), h = Math.round(o.h * k);
+  if (!mvSnapRenderer) mvSnapRenderer = new L.THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+  const R = mvSnapRenderer;
+  R.setPixelRatio(1); R.setSize(w, h, false);
+  const S = mvStage(L, g, { ...mvCfg(o), w, h }, w, h, R);
+  if (S.mixer) S.mixer.update(0);
+  R.render(S.scene, S.cam);
+  return { url: R.domElement.toDataURL('image/webp', 0.9), names: S.meshes.map((m, i) => (m.name || (m.parent && m.parent.name) || '').slice(0, 40) || `부품 ${i + 1}`) };
+}
+/* 스냅샷 줄: 설정이 바뀐 모델만 다시 그림 (한 번에 하나씩) */
+const snapQ = new Set();
+let snapBusy = false;
+function queueSnap(o) { snapQ.add(o.id); runSnaps(); }
+async function runSnaps() {
+  if (snapBusy) return;
+  snapBusy = true;
+  try {
+    while (snapQ.size) {
+      const id = snapQ.values().next().value;
+      snapQ.delete(id);
+      const o = getObj(id);
+      if (!o || o.type !== 'model' || !doc.assets[o.asset]) continue;
+      const sig = JSON.stringify(mvCfg(o));
+      try {
+        const { url, names } = await modelSnapshot(o);
+        const a = 'a' + uid();
+        doc.assets[a] = url; assetURL[a] = url;
+        o.thumbA = a; o.thumbSig = sig; o.partNames = names.slice(0, 400);
+        renderObj(o); changed();
+        if (sel.includes(o.id) && !$('#props .parts')) renderProps();
+      } catch (err) {
+        console.warn(err);
+        toast('3D 미리보기를 만들지 못했습니다 (인터넷 연결 확인): ' + err.message);
+      }
+    }
+  } finally { snapBusy = false; }
+}
+function checkSnaps() { doc.objects.forEach(o => { if (o.type === 'model' && o.thumbSig !== JSON.stringify(mvCfg(o))) queueSnap(o); }); }
+
+const loadScript = src => new Promise((res, rej) => {
+  const s = document.createElement('script');
+  s.src = src; s.onload = res; s.onerror = () => rej(new Error('불러오지 못했습니다: ' + src));
+  document.head.appendChild(s);
+});
+async function toGLB(object3d) {
+  const { GLTFExporter } = await import('three/addons/exporters/GLTFExporter.js');
+  return new Blob([await new GLTFExporter().parseAsync(object3d, { binary: true })], { type: 'model/gltf-binary' });
+}
+/* CAD(STEP·IGES) → 메시. 변환기(약 7.6MB)는 이때 처음 한 번만 내려받습니다 */
+async function cadToGroup(buf, ext) {
+  if (!window.occtimportjs) await loadScript(MV.occt + 'occt-import-js.js');
+  const occt = await window.occtimportjs({ locateFile: f => MV.occt + f });
+  const params = { linearUnit: 'millimeter', linearDeflectionType: 'bounding_box_ratio', linearDeflection: 0.001, angularDeflection: 0.5 };
+  const data = new Uint8Array(buf);
+  const res = ext === 'step' || ext === 'stp' ? occt.ReadStepFile(data, params) : occt.ReadIgesFile(data, params);
+  if (!res || !res.success || !res.meshes.length) throw new Error('CAD 파일에서 형상을 읽지 못했습니다');
+  const { THREE: T } = await mvLibs(), group = new T.Group();
+  res.meshes.forEach((m, i) => {
+    const g = new T.BufferGeometry();
+    g.setAttribute('position', new T.Float32BufferAttribute(m.attributes.position.array, 3));
+    if (m.attributes.normal) g.setAttribute('normal', new T.Float32BufferAttribute(m.attributes.normal.array, 3));
+    if (m.index) g.setIndex(Array.from(m.index.array));
+    if (!m.attributes.normal) g.computeVertexNormals();
+    const col = m.color ? new T.Color(m.color[0], m.color[1], m.color[2]) : new T.Color(0x9aa7b8);
+    const mesh = new T.Mesh(g, new T.MeshStandardMaterial({ color: col, metalness: 0.35, roughness: 0.45 }));
+    mesh.name = m.name || `부품 ${i + 1}`;
+    group.add(mesh);
+  });
+  group.rotation.x = -Math.PI / 2;   // CAD는 Z가 위, three.js는 Y가 위
+  return group;
+}
+async function meshToGroup(buf, ext, text) {
+  const { THREE: T } = await mvLibs();
+  if (ext === 'stl') {
+    const { STLLoader } = await import('three/addons/loaders/STLLoader.js');
+    const g = new STLLoader().parse(buf), mesh = new T.Mesh(g, new T.MeshStandardMaterial({ color: 0x9aa7b8, metalness: 0.3, roughness: 0.5 }));
+    if (!g.attributes.normal) g.computeVertexNormals();
+    const grp = new T.Group(); grp.add(mesh); grp.rotation.x = -Math.PI / 2; return grp;
+  }
+  const { OBJLoader } = await import('three/addons/loaders/OBJLoader.js');
+  return new OBJLoader().parse(text);
+}
+/* 파일 → GLB Blob (glb는 그대로). gltf는 파일 하나에 다 들어 있는 경우만 */
+async function fileToGLB(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (ext === 'glb') return file;
+  const buf = await file.arrayBuffer();
+  if (ext === 'gltf') {
+    const g = await mvParse(buf, MV.draco).catch(() => { throw new Error('외부 파일을 참조하는 .gltf는 열 수 없습니다. .glb로 내보내 주세요'); });
+    return toGLB(g.scene);
+  }
+  if (ext === 'stl' || ext === 'obj') return toGLB(await meshToGroup(buf, ext, ext === 'obj' ? new TextDecoder().decode(buf) : ''));
+  return toGLB(await cadToGroup(buf, ext));
+}
+async function addModelFile(file, at) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!MODEL_EXT.includes(ext)) { toast('지원하는 3D 형식: GLB · glTF · STL · OBJ · STEP · IGES'); return; }
+  const cad = ['step', 'stp', 'iges', 'igs'].includes(ext);
+  toast(cad ? 'CAD 파일을 변환하는 중… (처음엔 변환기 내려받기로 시간이 걸립니다)' : '3D 모델을 불러오는 중…');
+  try {
+    const blob = await fileToGLB(file);
+    if (blob.size > 40e6) toast('모델이 커서 발표 파일도 그만큼 커집니다');
+    const id = await addAsset(blob);
+    const w = 960, h = 640, s = vw * .5 / w / cam.z;
+    const o = insertObj(makeObj('model', { ...(at || onView(viewCenter())), asset: id, srcName: file.name, w, h, s }));
+    select([o.id]); commit();
+    queueSnap(o);
+  } catch (err) {
+    console.error(err);
+    toast('3D 모델을 불러오지 못했습니다: ' + err.message);
+  }
+}
+
+/* ── 미리보기 창: 마우스로 돌려 보고 '이 각도로 저장' ── */
+let mvPreview = null;
+async function openModelPreview() {
+  const o = selObjs().find(x => x.type === 'model');
+  if (!o) return;
+  const d = $('#mdlg'), host = $('#mv-host');
+  const W = Math.min(760, innerWidth - 80), H = Math.round(Math.min(W * o.h / o.w, innerHeight - 220));
+  host.style.width = W + 'px'; host.style.height = H + 'px';
+  host.innerHTML = '<p class="note mv-wait">불러오는 중…</p>';
+  d.showModal();
+  try {
+    const L = await mvLibs();
+    const buf = await fetch(doc.assets[o.asset]).then(r => r.arrayBuffer());
+    const g = await mvParse(buf, MV.draco);   // 스냅샷과 장면을 공유하지 않도록 따로 파싱
+    if (!d.open) return;
+    host.innerHTML = '';
+    mvPreview = { o, v: mvLive(L, g, { ...mvCfg(o), w: W, h: H }, host, devicePixelRatio || 1, { orbit: true, noSpin: true }) };
+  } catch (err) { host.innerHTML = `<p class="note warn">불러오지 못했습니다: ${esc(err.message)}</p>`; }
+}
+function closeModelPreview(save) {
+  if (mvPreview) {
+    if (save) { Object.assign(mvPreview.o, mvPreview.v.view()); commit(); renderProps(); }
+    mvPreview.v.stop(); mvPreview = null;
+  }
+  $('#mv-host').innerHTML = '';
+  if ($('#mdlg').open) $('#mdlg').close();
+}
+
+/* ── 발표 화면용 실행 코드 (모듈 스크립트로 들어감) ── */
+function modelRuntime() {
+  return `const MV=${JSON.stringify(MV)};
+${mvCfg}
+${mvLibs}
+${mvParse}
+${mvStage}
+${mvAim}
+${mvLive}
+const data=JSON.parse(document.getElementById('zc-data').textContent),cache={},live={};
+const gltfFor=id=>(cache[id]=cache[id]||fetch(data.assets[id]).then(r=>r.arrayBuffer()).then(b=>mvParse(b,MV.draco)));
+async function start(el){
+  const id=el.getAttribute('data-id');if(live[id])return;
+  const o=data.objects.find(x=>x.id===id);if(!o||!data.assets[o.asset])return;
+  live[id]='wait';
+  try{
+    const L=await mvLibs(),g=await gltfFor(o.asset);
+    if(live[id]!=='wait')return;
+    const r=el.getBoundingClientRect(),pr=Math.min(3,Math.max(1,r.width/o.w*(window.devicePixelRatio||1)));
+    live[id]=mvLive(L,g,mvCfg(o),el,pr,{orbit:!!o.orbit});el.classList.add('mv-on');
+  }catch(e){console.warn('3D 모델을 띄우지 못했습니다 (인터넷 연결 필요). 스냅샷을 대신 보여 줍니다.',e);delete live[id];}
+}
+function stop(el){const id=el.getAttribute('data-id'),v=live[id];if(v&&v.stop)v.stop();delete live[id];el.classList.remove('mv-on');}
+const els=s=>document.querySelectorAll('.o-model[data-step="'+s+'"]');
+document.addEventListener('impress:stepenter',e=>els(e.target.id).forEach(start));
+document.addEventListener('impress:stepleave',e=>els(e.target.id).forEach(stop));
+const cur=document.querySelector('.step.active');if(cur)els(cur.id).forEach(start);`;
+}
+
 const objStyleEl = document.createElement('style'); objStyleEl.textContent = OBJ_CSS; document.head.appendChild(objStyleEl);
 /* canvas.js — 무한 캔버스 카메라, 변형 링, 경로 오버레이, 미니맵, 포인터 입력 */
 const stage = $('#stage'), world = $('#world'), grid = $('#grid'), selbox = $('#selbox'), zebra = $('#zebra');
@@ -5997,7 +6311,9 @@ function zoomAt(sx, sy, k) {
 }
 function flyTo(rg, ms = 900, pad = .92) {
   zoomA = null;
-  const z = Math.min(vw / rg.w, vh / rg.h) * pad;
+  const z = Math.min(MAXZ, Math.max(MINZ, Math.min(vw / rg.w, vh / rg.h) * pad));
+  /* 화면 크기가 아직 0(숨은 창·막 열린 창)이거나 영역이 잘못되면 카메라를 건드리지 않음 — NaN이 문서에 번지는 것을 막음 */
+  if (!(vw > 0 && vh > 0) || !Number.isFinite(z) || ![rg.x, rg.y].every(Number.isFinite)) return;
   const to = { x: rg.x, y: rg.y, wz: rg.z || 0, z, r: cam.r + norm180((rg.r || 0) - cam.r), rx: cam.rx + norm180((rg.rx || 0) - cam.rx), ry: cam.ry + norm180((rg.ry || 0) - cam.ry) };
   if (ms <= 0) { cam = to; tween = null; applyCam(); return; }
   tween = { from: { ...cam }, to, t0: performance.now(), ms };
@@ -6584,7 +6900,13 @@ stage.addEventListener('wheel', e => {
   zoomAt(sx, sy, Math.exp(-e.deltaY * unit * (e.ctrlKey ? .009 : .0016)));
 }, { passive: false });
 
-new ResizeObserver(() => { vw = stage.clientWidth; vh = stage.clientHeight; applyCam(); }).observe(stage);
+new ResizeObserver(() => {
+  const first = !(vw > 0 && vh > 0);
+  vw = stage.clientWidth; vh = stage.clientHeight;
+  if (![cam.x, cam.y, cam.z].every(Number.isFinite) || cam.z <= 0) cam = { x: 0, y: 0, wz: 0, z: 1, r: 0, rx: 0, ry: 0 };
+  applyCam();
+  if (first && vw > 0 && vh > 0) fitAll(0);   // 크기 0으로 시작했다면 보이게 된 순간 전체 보기
+}).observe(stage);
 stage.addEventListener('scroll', () => { stage.scrollTop = 0; stage.scrollLeft = 0; });
 
 /* export.js — impress.js 프레젠테이션 만들기, 테스트 실행, 저장·불러오기 */
@@ -6704,7 +7026,7 @@ document.addEventListener('impress:stepenter',function(e){
 });
 
 document.addEventListener('click',function(e){
-  if(e.target.closest('.zc-alert'))return;   // 알림창 클릭은 화면 이동으로 넘기지 않음
+  if(e.target.closest('.zc-alert,.mv-canvas'))return;   // 알림창 클릭·3D 모델 돌리기는 화면 이동으로 넘기지 않음
   var fo=e.target.closest('.o[data-click]');
   if(fo){fxClick(fo);return;}
   if(e.target.closest('a,video,iframe,#impress-toolbar,#impress-console-button'))return;
@@ -6737,7 +7059,10 @@ const FX_ENTER = [['none', '없음'], ['fade', '나타나기'], ['up', '아래�
 
 function usedAssets() {
   const out = {};
-  doc.objects.forEach(o => { if (o.asset && doc.assets[o.asset]) out[o.asset] = doc.assets[o.asset]; });
+  doc.objects.forEach(o => {
+    if (o.asset && doc.assets[o.asset]) out[o.asset] = doc.assets[o.asset];
+    if (o.thumbA && doc.assets[o.thumbA]) out[o.thumbA] = doc.assets[o.thumbA];   // 3D 모델 스냅샷
+  });
   return out;
 }
 function stepAttrs(r) {
@@ -6793,10 +7118,14 @@ function buildShowHTML() {
   }).join('\n');
   const data = JSON.stringify({ ...doc, assets: usedAssets() }).replace(/</g, '\\u003c');
   const impressSrc = $('#impress-src').textContent;
+  /* 3D 모델이 있을 때만 three.js(CDN)를 불러오는 모듈을 넣음. 오프라인이면 스냅샷이 그대로 보임 */
+  const has3D = doc.objects.some(o => o.type === 'model' && o.asset);
+  const head3D = has3D ? `<script type="importmap">{"imports":{"three":"${MV.three}","three/addons/":"${MV.addons}"}}<\/script>` : '';
+  const run3D = has3D ? `<script type="module">${modelRuntime().replace(/<\/script/gi, '<\\/script')}<\/script>` : '';
   return `<!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(doc.title)}</title>
-<style>:root{${themeVars()};--pw:${doc.W}px;--ph:${doc.H}px}${OBJ_CSS}${SHOW_CSS}</style></head>
+<style>:root{${themeVars()};--pw:${doc.W}px;--ph:${doc.H}px}${OBJ_CSS}${SHOW_CSS}</style>${head3D}</head>
 <body class="impress-not-supported">
 <div id="impress" data-width="${doc.W}" data-height="${doc.H}" data-transition-duration="${doc.duration}" data-max-scale="4" data-min-scale="0" data-perspective="${doc.perspective}">
 ${objs}
@@ -6809,6 +7138,7 @@ ${steps}
 <script type="application/json" id="zc-data">${data}<\/script>
 <script>${impressSrc}<\/script>
 <script>${SHOW_RUNTIME}<\/script>
+${run3D}
 </body></html>`;
 }
 
@@ -6857,8 +7187,9 @@ function parseDocText(text, name) {
   const data = JSON.parse(text);
   if (Array.isArray(data.objects)) {
     /* 구조 검증: 알려진 종류만, id는 영숫자만, 숫자 칸은 숫자로 (HTML 속성 주입 방지) */
-    const TYPES = ['frame', 'text', 'image', 'shape', 'video', 'table', 'chart', 'connector', 'ink'];
-    const NUMS = ['x', 'y', 'z', 'w', 'h', 's', 'rot', 'rx', 'ry', 'opacity', 'fs', 'fw', 'sw', 'radius'];
+    const TYPES = ['frame', 'text', 'image', 'shape', 'video', 'table', 'chart', 'connector', 'ink', 'model', 'sim'];
+    const NUMS = ['x', 'y', 'z', 'w', 'h', 's', 'rot', 'rx', 'ry', 'opacity', 'fs', 'fw', 'sw', 'radius', 'speed', 'yaw', 'pitch', 'zoom', 'exposure'];
+    const HEX = /^#[0-9a-f]{6}$/i;
     const safeId = v => String(v ?? '').replace(/[^\w-]/g, '');
     data.objects = data.objects.filter(o => o && TYPES.includes(o.type));
     data.objects.forEach(o => {
@@ -6866,6 +7197,17 @@ function parseDocText(text, name) {
       NUMS.forEach(k => { if (k in o) { const v = +o[k]; o[k] = Number.isFinite(v) ? v : (k === 's' || k === 'opacity' ? 1 : 0); } });
       if (o.p && typeof o.p === 'object') Object.keys(o.p).forEach(k => { const v = +o.p[k]; if (Number.isFinite(v)) o.p[k] = v; else delete o.p[k]; });
       if (o.type === 'connector') { o.from = safeId(o.from); o.to = safeId(o.to); }
+      if (o.type === 'model') {
+        o.asset = safeId(o.asset); o.thumbA = safeId(o.thumbA) || null; o.srcName = String(o.srcName || '');
+        o.bg = HEX.test(o.bg) ? o.bg : null;
+        o.partNames = (Array.isArray(o.partNames) ? o.partNames : []).map(n => String(n)).slice(0, 400);
+        const parts = {};
+        Object.entries(o.parts && typeof o.parts === 'object' ? o.parts : {}).forEach(([k, p]) => {
+          if (!/^\d+$/.test(k) || !p || typeof p !== 'object') return;
+          parts[k] = { h: !!p.h, ...(HEX.test(p.c) ? { c: p.c } : {}), ...(Number.isFinite(+p.o) && p.o != null ? { o: Math.min(1, Math.max(0, +p.o)) } : {}) };
+        });
+        o.parts = parts;
+      }
       /* 인터랙션 값은 목록에 있는 것만, 링크는 http(s)만 */
       const pick = (v, list) => list.some(([k]) => k === v) ? v : 'none';
       if ('hover' in o) o.hover = pick(o.hover, FX_HOVER);
@@ -6926,6 +7268,7 @@ function commit() {
   if (hist.length > 200) hist.shift();
   hi = hist.length - 1;
   changed();
+  checkSnaps();   // 설정이 바뀐 3D 모델은 스냅샷을 다시 그림
 }
 function changed() {
   $('#btn-undo').disabled = hi <= 0; $('#btn-redo').disabled = hi >= hist.length - 1;
@@ -7007,6 +7350,9 @@ const viewCenter = () => s2w(vw / 2, vh / 2);
 /* 새 객체는 지금 보는 면에 놓입니다: 기울어진 프레임 안에서 추가해도 그 면에 맞습니다 */
 const onView = ([x, y, z]) => ({ x, y, z, rot: cam.r, rx: cam.rx, ry: cam.ry });
 function insertObj(o) {
+  /* 마지막 방어선: 위치·크기가 숫자가 아니면 문서(자동 저장)에 NaN이 남지 않도록 바로잡음 */
+  ['x', 'y', 'z', 'rot', 'rx', 'ry'].forEach(k => { if (!Number.isFinite(o[k])) o[k] = 0; });
+  if (!(o.s > 0 && Number.isFinite(o.s))) o.s = 1;
   if (o.type === 'frame') {
     const i = doc.objects.findIndex(x => x.type !== 'frame');
     doc.objects.splice(i < 0 ? doc.objects.length : i, 0, o);
@@ -7183,6 +7529,7 @@ function newSlide() {
     s = Math.min(vw / doc.W, vh / doc.H) / cam.z * .8;
     pos = onView(viewCenter());
   }
+  if (!(s > 0 && Number.isFinite(s)) || ![pos.x, pos.y].every(Number.isFinite)) { s = 1; pos = { x: 0, y: 0, z: 0, rot: 0, rx: 0, ry: 0 }; }
   const f = insertObj(makeObj('frame', { ...pos, frame: 'rect', slide: true, w: doc.W, h: doc.H, s }));
   const v = mulV(objM(f), [0, -doc.H * s * .3, 0]);
   insertObj(makeObj('text', {
@@ -7290,6 +7637,14 @@ const ACT = {
   frame: k => addFrame(k), text: () => addText(), shape: s => addShape(s), table: addTable,
   tblRow: d => tableResize(+d, 0), tblCol: d => tableResize(0, +d),
   chart: k => addChart(k || 'bar'),
+  model: () => $('#file-model').click(),
+  modelPreview: openModelPreview,
+  /* 부품 보이기/숨기기·모두 초기화 */
+  partVis(i) { const o = selObjs().find(x => x.type === 'model'); if (!o) return; const p = o.parts[i] || {}; o.parts = { ...o.parts, [i]: { ...p, h: !p.h } }; commit(); renderProps(); },
+  partsShowAll() { const o = selObjs().find(x => x.type === 'model'); if (!o) return; o.parts = Object.fromEntries(Object.entries(o.parts).map(([k, p]) => [k, { ...p, h: false }])); commit(); renderProps(); },
+  partsReset() { const o = selObjs().find(x => x.type === 'model'); if (!o) return; o.parts = {}; commit(); renderProps(); },
+  viewReset() { selObjs().filter(x => x.type === 'model').forEach(o => Object.assign(o, { yaw: 30, pitch: 20, zoom: 1 })); commit(); renderProps(); },
+  modelBg() { selObjs().filter(x => x.type === 'model').forEach(o => { o.bg = o.bg ? null : '#ffffff'; }); commit(); renderProps(); },
   connect: () => setTool('connect'), pen: () => setTool('pen'),
   route(k) { doc.lastRoute = k; selObjs().filter(o => o.type === 'connector').forEach(o => { o.route = k; refreshConnectors([o.id]); }); commit(); renderProps(); syncOverlay(); },
   head(k) { selObjs().filter(o => o.type === 'connector').forEach(o => { o.head = k; renderObj(o); }); commit(); renderProps(); },
@@ -7420,7 +7775,7 @@ const MENUS = [
   ['편집', [['실행 취소', 'undo', '', '⌘Z'], ['다시 실행', 'redo', '', '⇧⌘Z'], '-', ['복사', 'copy', '', '⌘C'], ['붙여넣기', 'paste', '', '⌘V'], ['복제', 'dup', '', '⌘D'], ['삭제', 'del', '', 'Delete'], '-',
     ['모두 선택', 'selectAll', '', '⌘A'], ['선택 해제', 'deselect', '', 'Esc']]],
   ['삽입', [['새 슬라이드', 'newSlide'], '-', ['텍스트', 'text', '', '더블클릭'], ['대괄호 프레임', 'frame', 'bracket'], ['원 프레임', 'frame', 'circle'], ['사각 프레임', 'frame', 'rect'], ['숨은 프레임', 'frame', 'hidden'], '-',
-    ['도형…', 'shapeMenu'], ['사각형', 'shape', 'rect'], ['원', 'shape', 'ellipse'], ['화살표', 'shape', 'arrow'], ['선', 'shape', 'line'], '-', ['표', 'table'], ['막대 차트', 'chart', 'bar'], ['꺾은선 차트', 'chart', 'line'], ['원 차트', 'chart', 'pie'], '-', ['연결선 잇기', 'connect'], ['펜으로 그리기', 'pen'], '-',
+    ['도형…', 'shapeMenu'], ['사각형', 'shape', 'rect'], ['원', 'shape', 'ellipse'], ['화살표', 'shape', 'arrow'], ['선', 'shape', 'line'], '-', ['표', 'table'], ['막대 차트', 'chart', 'bar'], ['꺾은선 차트', 'chart', 'line'], ['원 차트', 'chart', 'pie'], '-', ['3D 모델… (GLB·STL·OBJ·STEP·IGES)', 'model'], '-', ['연결선 잇기', 'connect'], ['펜으로 그리기', 'pen'], '-',
     ['이미지 파일…', 'image'], ['이미지 주소…', 'imageURL'], ['영상 주소…', 'videoURL'], ['영상 파일…', 'videoFile']]],
   ['슬라이드', [['처음부터 발표', 'runStart'], ['현재 슬라이드부터 발표', 'run', '', '⌘↵'], '-', ['새 슬라이드', 'newSlide'], ['현재 슬라이드 복제', 'dupSlide'], ['현재 슬라이드 삭제', 'delSlide'], '-',
     ['이전 슬라이드', 'prevSlide', '', 'PageUp'], ['다음 슬라이드', 'nextSlide', '', 'PageDown'], ['앞으로 옮기기', 'moveSlide', '-1'], ['뒤로 옮기기', 'moveSlide', '1'], '-',
@@ -7499,6 +7854,29 @@ function chartProps(o) {
     <label class="row"><span>글자 크기</span><input type="number" data-p="fs" min="8" max="200" step="2" value="${o.fs}" style="width:84px"></label>
     <label class="row"><span>글꼴</span><select data-p="font"><option value="sans"${o.font === 'sans' ? ' selected' : ''}>고딕</option><option value="serif"${o.font === 'serif' ? ' selected' : ''}>명조</option><option value="mono"${o.font === 'mono' ? ' selected' : ''}>고정폭</option></select></label>
     <p class="note">색은 테마 강조색부터 차례로 씁니다.</p>`;
+}
+function modelProps(o) {
+  const mb = doc.assets[o.asset] ? (doc.assets[o.asset].length * .75 / 1048576).toFixed(1) : '?';
+  const chk = (label, k) => `<label class="row"><span>${label}</span><input type="checkbox" data-act="toggleProp" data-arg="${k}"${o[k] ? ' checked' : ''}></label>`;
+  const names = o.partNames || [];
+  const rows = names.map((n, i) => {
+    const p = o.parts[i] || {};
+    return `<div class="pt${p.h ? ' off' : ''}"><button data-act="partVis" data-arg="${i}" title="${p.h ? '보이기' : '숨기기'}">${icon(p.h ? 'eyeoff' : 'eye')}</button><span title="${esc(n)}">${esc(n)}</span><input type="color" data-part="${i}" value="${esc(p.c || '#9aa7b8')}" title="색 바꾸기"${p.c ? '' : ' class="unset"'}></div>`;
+  }).join('');
+  return `<h3>3D 모델</h3><p class="note">${esc(o.srcName || '')} · ${mb} MB${o.thumbA ? '' : ' · <b>미리보기 만드는 중…</b>'}</p>
+    <button class="wide" data-act="modelPreview">미리보기에서 각도 맞추기</button>
+    <button class="wide" data-act="viewReset">기본 각도로</button>
+    <h4>발표 화면</h4>
+    ${chk('자동 회전', 'spin')}
+    ${o.spin ? `<label class="row"><span>회전 속도</span><input type="range" data-p="speed" min="0.1" max="4" step="0.1" value="${o.speed}"></label>` : ''}
+    ${chk('마우스로 돌리기', 'orbit')}
+    ${chk('애니메이션 재생', 'anim')}
+    <h4>보기</h4>
+    <label class="row"><span>밝기</span><input type="range" data-p="exposure" min="0.2" max="2.5" step="0.05" value="${o.exposure}"></label>
+    <label class="row"><span>배경</span><span class="bgset"><input type="checkbox" data-act="modelBg"${o.bg ? ' checked' : ''} title="배경색 쓰기"><input type="color" data-p="bg" value="${esc(o.bg || '#ffffff')}"${o.bg ? '' : ' disabled'}></span></label>
+    <h4>부품 <span class="note" style="font-weight:400">${names.length}개</span></h4>
+    ${names.length ? `<div class="parts">${rows}</div><div class="grid2"><button class="wide" data-act="partsShowAll">모두 보이기</button><button class="wide" data-act="partsReset">부품 설정 초기화</button></div>` : '<p class="note">스냅샷을 만든 뒤 부품 목록이 나옵니다.</p>'}
+    <p class="note">발표 화면에서는 이 슬라이드에 들어올 때 실시간으로 돌고, 나가면 멈춥니다. 인터넷이 없으면 스냅샷이 대신 보입니다. 기울어진 슬라이드에서는 마우스 회전 방향이 어긋날 수 있습니다.</p>`;
 }
 function connectorProps(o) {
   const a = getObj(o.from), b = getObj(o.to);
@@ -7617,7 +7995,7 @@ $('#path-list').addEventListener('contextmenu', e => {
 });
 
 /* ── 왼쪽: 레이어 목록 (위가 맨 앞) ── */
-const TYPE_ICON = { frame: 'frame', text: 'text', image: 'image', shape: 'shape', video: 'video', table: 'table', chart: 'chart', connector: 'path', ink: 'pen' };
+const TYPE_ICON = { frame: 'frame', text: 'text', image: 'image', shape: 'shape', video: 'video', table: 'table', chart: 'chart', connector: 'path', ink: 'pen', model: 'cube', sim: 'sim' };
 function renderLayers() {
   const box = $('#layer-list');
   if (!box || $('#pane-layers').hidden) return;
@@ -7741,6 +8119,7 @@ function renderProps() {
   if (o.type === 'chart') h = chartProps(o);
   if (o.type === 'connector') { p.innerHTML = connectorProps(o) + acts; return; }
   if (o.type === 'ink') h = inkProps(o);
+  if (o.type === 'model') h = modelProps(o);
   if (o.type === 'image') h = `<h3>이미지</h3><label class="row"><span>모서리</span><input type="range" data-p="radius" min="0" max="200" value="${o.radius}"></label>`;
   if (o.type === 'video') h = `<h3>영상</h3><p class="note">편집 중에는 자리표시만 보이고, 테스트 실행과 내보낸 파일에서 재생됩니다.</p>`;
   if (o.type !== 'frame' && inPath) h += `<h4>발표자 노트</h4><textarea data-p="notes" rows="3" placeholder="발표 화면에서 P키로 봅니다">${esc(o.notes)}</textarea>`;
@@ -7784,6 +8163,10 @@ $('#props').addEventListener('input', e => {
   }
   if (d === 'bg') { doc.bg = f.value; document.documentElement.style.cssText = themeVars(); }
   if (d === 'duration') doc.duration = +f.value;
+  if (f.dataset.part != null) {   // 3D 모델 부품 색
+    const o = selObjs().find(x => x.type === 'model');
+    if (o) { const i = f.dataset.part; o.parts = { ...o.parts, [i]: { ...(o.parts[i] || {}), c: f.value } }; f.classList.remove('unset'); }
+  }
   if (d === 'penColor') doc.penColor = f.value;
   if (d === 'penWidth') doc.penWidth = +f.value;
   if (d === 'perspective') { doc.perspective = +f.value; applyCam(); renderPathList(); }
@@ -7799,6 +8182,10 @@ $('#props').addEventListener('change', e => {
 
 /* ── 파일 입력·끌어다 놓기·붙여넣기 ── */
 $('#file-image').addEventListener('change', e => { addImages([...e.target.files]); e.target.value = ''; });
+$('#file-model').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) addModelFile(f); });
+/* 3D 미리보기 창: 저장·닫기, Esc로 닫아도 WebGL 해제 */
+$('#mdlg').addEventListener('click', e => { const b = e.target.closest('[data-mv]'); if (b) closeModelPreview(b.dataset.mv === 'save'); });
+$('#mdlg').addEventListener('close', () => closeModelPreview(false));
 $('#file-video').addEventListener('change', async e => {
   const f = e.target.files[0];
   e.target.value = '';
@@ -7826,6 +8213,7 @@ stage.addEventListener('drop', e => {
   e.preventDefault();
   const files = [...e.dataTransfer.files], [sx, sy] = pt(e);
   if (files[0] && /\.(json|html?)$/i.test(files[0].name)) openFile(files[0]);
+  else if (files[0] && MODEL_EXT.includes(files[0].name.split('.').pop().toLowerCase())) addModelFile(files[0], onView(s2w(sx, sy)));
   else addImages(files, s2w(sx, sy));
 });
 let clip = null;

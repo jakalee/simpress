@@ -89,7 +89,9 @@ function zoomAt(sx, sy, k) {
 }
 function flyTo(rg, ms = 900, pad = .92) {
   zoomA = null;
-  const z = Math.min(vw / rg.w, vh / rg.h) * pad;
+  const z = Math.min(MAXZ, Math.max(MINZ, Math.min(vw / rg.w, vh / rg.h) * pad));
+  /* 화면 크기가 아직 0(숨은 창·막 열린 창)이거나 영역이 잘못되면 카메라를 건드리지 않음 — NaN이 문서에 번지는 것을 막음 */
+  if (!(vw > 0 && vh > 0) || !Number.isFinite(z) || ![rg.x, rg.y].every(Number.isFinite)) return;
   const to = { x: rg.x, y: rg.y, wz: rg.z || 0, z, r: cam.r + norm180((rg.r || 0) - cam.r), rx: cam.rx + norm180((rg.rx || 0) - cam.rx), ry: cam.ry + norm180((rg.ry || 0) - cam.ry) };
   if (ms <= 0) { cam = to; tween = null; applyCam(); return; }
   tween = { from: { ...cam }, to, t0: performance.now(), ms };
@@ -676,5 +678,11 @@ stage.addEventListener('wheel', e => {
   zoomAt(sx, sy, Math.exp(-e.deltaY * unit * (e.ctrlKey ? .009 : .0016)));
 }, { passive: false });
 
-new ResizeObserver(() => { vw = stage.clientWidth; vh = stage.clientHeight; applyCam(); }).observe(stage);
+new ResizeObserver(() => {
+  const first = !(vw > 0 && vh > 0);
+  vw = stage.clientWidth; vh = stage.clientHeight;
+  if (![cam.x, cam.y, cam.z].every(Number.isFinite) || cam.z <= 0) cam = { x: 0, y: 0, wz: 0, z: 1, r: 0, rx: 0, ry: 0 };
+  applyCam();
+  if (first && vw > 0 && vh > 0) fitAll(0);   // 크기 0으로 시작했다면 보이게 된 순간 전체 보기
+}).observe(stage);
 stage.addEventListener('scroll', () => { stage.scrollTop = 0; stage.scrollLeft = 0; });

@@ -41,6 +41,9 @@ const OBJ_CSS = `
 .tbl.stripe tr:nth-child(even) td{background:rgba(128,136,150,.12)}
 .tbl td:empty::after,.tbl th:empty::after{content:'\\200b'}
 .o-chart text{white-space:pre}
+.o-model .mv-snap{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.o-model.mv-on .mv-snap{visibility:hidden}
+.o-model .mv-wait{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4%;border:2px dashed rgba(120,128,140,.5);border-radius:12px;color:rgba(120,128,140,.9);font:28px sans-serif}
 .o-connector,.o-ink{pointer-events:none}.o-connector .hit,.o-ink .hit{pointer-events:stroke}
 .o-chart.play .ca{animation:.75s cubic-bezier(.2,.8,.2,1) both}
 .o-chart.play .cb.ca{transform-box:fill-box;transform-origin:50% 100%;animation-name:chUp}
@@ -72,6 +75,7 @@ function makeObj(type, props) {
   if (type === 'table') Object.assign(base, { rows: [['항목', '내용', '비고'], ['', '', ''], ['', '', ''], ['', '', '']], head: true, stripe: true, fs: 30, color: null, fill: null, stroke: null, align: 'left', font: 'sans' });
   if (type === 'chart') Object.assign(base, { kind: 'bar', title: '', fs: 28, font: 'sans', legend: true, labels: false, grid: true, anim: true,
     data: [['항목', '2024', '2025'], ['1분기', '42', '55'], ['2분기', '58', '61'], ['3분기', '49', '72'], ['4분기', '66', '80']] });
+  if (type === 'model') Object.assign(base, { asset: null, srcName: '', thumbA: null, thumbSig: '', partNames: [], bg: null, spin: true, speed: 1, orbit: true, anim: true, yaw: 30, pitch: 20, zoom: 1, exposure: 1, parts: {} });
   if (type === 'connector') Object.assign(base, { from: null, to: null, route: 'elbow', stroke: null, sw: 6, head: 'end', dash: false, d: '' });
   if (type === 'ink') Object.assign(base, { d: '', stroke: null, sw: 6 });
   if (type === 'frame') Object.assign(base, { frame: 'bracket', color: null, fill: null, notes: '' });
@@ -215,6 +219,12 @@ function objInner(o, mode, srcOf) {
   if (o.type === 'table') return tableHTML(o);
   if (o.type === 'chart') return chartSVG(o);
   if (o.type === 'connector') return connectorSVG(o);
+  if (o.type === 'model') {
+    /* 편집 화면·썸네일은 스냅샷, 발표 화면은 스냅샷 위에 실시간 캔버스가 얹힘 (오프라인이면 스냅샷 그대로) */
+    const src = !o.thumbA ? '' : mode === 'show' ? `data-a="${esc(o.thumbA)}"` : `src="${esc(assetURL[o.thumbA] || '')}"`;
+    return src ? `<img class="mv-snap" alt="" draggable="false" ${src}>`
+      : `<div class="mv-wait"><svg viewBox="0 0 24 24" width="22%" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="M3 7l9 5 9-5M12 12v10"/></svg><span>3D 모델 준비 중…</span></div>`;
+  }
   if (o.type === 'ink') {
     const c = esc(o.stroke || 'var(--c-title)');
     return `<svg viewBox="0 0 ${o.w} ${o.h}"><path class="hit" d="${esc(o.d)}" fill="none" stroke="transparent" stroke-width="${o.sw + 16}" stroke-linecap="round"/><path d="${esc(o.d)}" fill="none" stroke="${c}" stroke-width="${o.sw}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -312,7 +322,7 @@ function overviewRegion() {
 const SHAPE_NAMES = { rect: '사각형', ellipse: '원', triangle: '삼각형', diamond: '마름모', polygon: '다각형', star: '별', cross: '십자', pie: '부채꼴', donut: '도넛',
   arrow: '화살표', arrow2: '좌우 화살표', chevron: '갈매기형', parallelogram: '평행사변형', trapezoid: '사다리꼴', callout: '설명선', terminal: '시작·끝', document: '문서', line: '선' };
 const plainText = html => (new DOMParser().parseFromString(html || '', 'text/html').body.textContent || '').trim();
-const TYPE_NAMES = { image: '이미지', video: '영상', table: '표', chart: '차트', connector: '연결선', ink: '그리기' };
+const TYPE_NAMES = { image: '이미지', video: '영상', table: '표', chart: '차트', connector: '연결선', ink: '그리기', model: '3D 모델', sim: '시뮬레이션' };
 /* 레이어 목록에 보일 이름: 사용자가 붙인 이름 → 글 내용 → 종류 */
 function objLabel(o) {
   if (o.name) return o.name;
@@ -320,6 +330,7 @@ function objLabel(o) {
   if (o.type === 'frame') return o.slide ? '슬라이드' : '프레임';
   if (o.type === 'shape') return plainText(o.text).slice(0, 30) || SHAPE_NAMES[o.shape] || '도형';
   if (o.type === 'table') return plainText((o.rows[0] || []).join(' · ')).slice(0, 30) || '표';
+  if (o.type === 'model') return o.srcName ? o.srcName.replace(/\.[^.]+$/, '') : '3D 모델';
   if (o.type === 'chart') return o.title || (CHART_KINDS.find(k => k[0] === o.kind) || ['', ''])[1] + ' 차트';
   return TYPE_NAMES[o.type] || o.type;
 }

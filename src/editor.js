@@ -30,6 +30,7 @@ function commit() {
   if (hist.length > 200) hist.shift();
   hi = hist.length - 1;
   changed();
+  checkSnaps();   // 설정이 바뀐 3D 모델은 스냅샷을 다시 그림
 }
 function changed() {
   $('#btn-undo').disabled = hi <= 0; $('#btn-redo').disabled = hi >= hist.length - 1;
@@ -111,6 +112,9 @@ const viewCenter = () => s2w(vw / 2, vh / 2);
 /* 새 객체는 지금 보는 면에 놓입니다: 기울어진 프레임 안에서 추가해도 그 면에 맞습니다 */
 const onView = ([x, y, z]) => ({ x, y, z, rot: cam.r, rx: cam.rx, ry: cam.ry });
 function insertObj(o) {
+  /* 마지막 방어선: 위치·크기가 숫자가 아니면 문서(자동 저장)에 NaN이 남지 않도록 바로잡음 */
+  ['x', 'y', 'z', 'rot', 'rx', 'ry'].forEach(k => { if (!Number.isFinite(o[k])) o[k] = 0; });
+  if (!(o.s > 0 && Number.isFinite(o.s))) o.s = 1;
   if (o.type === 'frame') {
     const i = doc.objects.findIndex(x => x.type !== 'frame');
     doc.objects.splice(i < 0 ? doc.objects.length : i, 0, o);
@@ -287,6 +291,7 @@ function newSlide() {
     s = Math.min(vw / doc.W, vh / doc.H) / cam.z * .8;
     pos = onView(viewCenter());
   }
+  if (!(s > 0 && Number.isFinite(s)) || ![pos.x, pos.y].every(Number.isFinite)) { s = 1; pos = { x: 0, y: 0, z: 0, rot: 0, rx: 0, ry: 0 }; }
   const f = insertObj(makeObj('frame', { ...pos, frame: 'rect', slide: true, w: doc.W, h: doc.H, s }));
   const v = mulV(objM(f), [0, -doc.H * s * .3, 0]);
   insertObj(makeObj('text', {
@@ -394,6 +399,14 @@ const ACT = {
   frame: k => addFrame(k), text: () => addText(), shape: s => addShape(s), table: addTable,
   tblRow: d => tableResize(+d, 0), tblCol: d => tableResize(0, +d),
   chart: k => addChart(k || 'bar'),
+  model: () => $('#file-model').click(),
+  modelPreview: openModelPreview,
+  /* 부품 보이기/숨기기·모두 초기화 */
+  partVis(i) { const o = selObjs().find(x => x.type === 'model'); if (!o) return; const p = o.parts[i] || {}; o.parts = { ...o.parts, [i]: { ...p, h: !p.h } }; commit(); renderProps(); },
+  partsShowAll() { const o = selObjs().find(x => x.type === 'model'); if (!o) return; o.parts = Object.fromEntries(Object.entries(o.parts).map(([k, p]) => [k, { ...p, h: false }])); commit(); renderProps(); },
+  partsReset() { const o = selObjs().find(x => x.type === 'model'); if (!o) return; o.parts = {}; commit(); renderProps(); },
+  viewReset() { selObjs().filter(x => x.type === 'model').forEach(o => Object.assign(o, { yaw: 30, pitch: 20, zoom: 1 })); commit(); renderProps(); },
+  modelBg() { selObjs().filter(x => x.type === 'model').forEach(o => { o.bg = o.bg ? null : '#ffffff'; }); commit(); renderProps(); },
   connect: () => setTool('connect'), pen: () => setTool('pen'),
   route(k) { doc.lastRoute = k; selObjs().filter(o => o.type === 'connector').forEach(o => { o.route = k; refreshConnectors([o.id]); }); commit(); renderProps(); syncOverlay(); },
   head(k) { selObjs().filter(o => o.type === 'connector').forEach(o => { o.head = k; renderObj(o); }); commit(); renderProps(); },
@@ -524,7 +537,7 @@ const MENUS = [
   ['편집', [['실행 취소', 'undo', '', '⌘Z'], ['다시 실행', 'redo', '', '⇧⌘Z'], '-', ['복사', 'copy', '', '⌘C'], ['붙여넣기', 'paste', '', '⌘V'], ['복제', 'dup', '', '⌘D'], ['삭제', 'del', '', 'Delete'], '-',
     ['모두 선택', 'selectAll', '', '⌘A'], ['선택 해제', 'deselect', '', 'Esc']]],
   ['삽입', [['새 슬라이드', 'newSlide'], '-', ['텍스트', 'text', '', '더블클릭'], ['대괄호 프레임', 'frame', 'bracket'], ['원 프레임', 'frame', 'circle'], ['사각 프레임', 'frame', 'rect'], ['숨은 프레임', 'frame', 'hidden'], '-',
-    ['도형…', 'shapeMenu'], ['사각형', 'shape', 'rect'], ['원', 'shape', 'ellipse'], ['화살표', 'shape', 'arrow'], ['선', 'shape', 'line'], '-', ['표', 'table'], ['막대 차트', 'chart', 'bar'], ['꺾은선 차트', 'chart', 'line'], ['원 차트', 'chart', 'pie'], '-', ['연결선 잇기', 'connect'], ['펜으로 그리기', 'pen'], '-',
+    ['도형…', 'shapeMenu'], ['사각형', 'shape', 'rect'], ['원', 'shape', 'ellipse'], ['화살표', 'shape', 'arrow'], ['선', 'shape', 'line'], '-', ['표', 'table'], ['막대 차트', 'chart', 'bar'], ['꺾은선 차트', 'chart', 'line'], ['원 차트', 'chart', 'pie'], '-', ['3D 모델… (GLB·STL·OBJ·STEP·IGES)', 'model'], '-', ['연결선 잇기', 'connect'], ['펜으로 그리기', 'pen'], '-',
     ['이미지 파일…', 'image'], ['이미지 주소…', 'imageURL'], ['영상 주소…', 'videoURL'], ['영상 파일…', 'videoFile']]],
   ['슬라이드', [['처음부터 발표', 'runStart'], ['현재 슬라이드부터 발표', 'run', '', '⌘↵'], '-', ['새 슬라이드', 'newSlide'], ['현재 슬라이드 복제', 'dupSlide'], ['현재 슬라이드 삭제', 'delSlide'], '-',
     ['이전 슬라이드', 'prevSlide', '', 'PageUp'], ['다음 슬라이드', 'nextSlide', '', 'PageDown'], ['앞으로 옮기기', 'moveSlide', '-1'], ['뒤로 옮기기', 'moveSlide', '1'], '-',
@@ -603,6 +616,29 @@ function chartProps(o) {
     <label class="row"><span>글자 크기</span><input type="number" data-p="fs" min="8" max="200" step="2" value="${o.fs}" style="width:84px"></label>
     <label class="row"><span>글꼴</span><select data-p="font"><option value="sans"${o.font === 'sans' ? ' selected' : ''}>고딕</option><option value="serif"${o.font === 'serif' ? ' selected' : ''}>명조</option><option value="mono"${o.font === 'mono' ? ' selected' : ''}>고정폭</option></select></label>
     <p class="note">색은 테마 강조색부터 차례로 씁니다.</p>`;
+}
+function modelProps(o) {
+  const mb = doc.assets[o.asset] ? (doc.assets[o.asset].length * .75 / 1048576).toFixed(1) : '?';
+  const chk = (label, k) => `<label class="row"><span>${label}</span><input type="checkbox" data-act="toggleProp" data-arg="${k}"${o[k] ? ' checked' : ''}></label>`;
+  const names = o.partNames || [];
+  const rows = names.map((n, i) => {
+    const p = o.parts[i] || {};
+    return `<div class="pt${p.h ? ' off' : ''}"><button data-act="partVis" data-arg="${i}" title="${p.h ? '보이기' : '숨기기'}">${icon(p.h ? 'eyeoff' : 'eye')}</button><span title="${esc(n)}">${esc(n)}</span><input type="color" data-part="${i}" value="${esc(p.c || '#9aa7b8')}" title="색 바꾸기"${p.c ? '' : ' class="unset"'}></div>`;
+  }).join('');
+  return `<h3>3D 모델</h3><p class="note">${esc(o.srcName || '')} · ${mb} MB${o.thumbA ? '' : ' · <b>미리보기 만드는 중…</b>'}</p>
+    <button class="wide" data-act="modelPreview">미리보기에서 각도 맞추기</button>
+    <button class="wide" data-act="viewReset">기본 각도로</button>
+    <h4>발표 화면</h4>
+    ${chk('자동 회전', 'spin')}
+    ${o.spin ? `<label class="row"><span>회전 속도</span><input type="range" data-p="speed" min="0.1" max="4" step="0.1" value="${o.speed}"></label>` : ''}
+    ${chk('마우스로 돌리기', 'orbit')}
+    ${chk('애니메이션 재생', 'anim')}
+    <h4>보기</h4>
+    <label class="row"><span>밝기</span><input type="range" data-p="exposure" min="0.2" max="2.5" step="0.05" value="${o.exposure}"></label>
+    <label class="row"><span>배경</span><span class="bgset"><input type="checkbox" data-act="modelBg"${o.bg ? ' checked' : ''} title="배경색 쓰기"><input type="color" data-p="bg" value="${esc(o.bg || '#ffffff')}"${o.bg ? '' : ' disabled'}></span></label>
+    <h4>부품 <span class="note" style="font-weight:400">${names.length}개</span></h4>
+    ${names.length ? `<div class="parts">${rows}</div><div class="grid2"><button class="wide" data-act="partsShowAll">모두 보이기</button><button class="wide" data-act="partsReset">부품 설정 초기화</button></div>` : '<p class="note">스냅샷을 만든 뒤 부품 목록이 나옵니다.</p>'}
+    <p class="note">발표 화면에서는 이 슬라이드에 들어올 때 실시간으로 돌고, 나가면 멈춥니다. 인터넷이 없으면 스냅샷이 대신 보입니다. 기울어진 슬라이드에서는 마우스 회전 방향이 어긋날 수 있습니다.</p>`;
 }
 function connectorProps(o) {
   const a = getObj(o.from), b = getObj(o.to);
@@ -721,7 +757,7 @@ $('#path-list').addEventListener('contextmenu', e => {
 });
 
 /* ── 왼쪽: 레이어 목록 (위가 맨 앞) ── */
-const TYPE_ICON = { frame: 'frame', text: 'text', image: 'image', shape: 'shape', video: 'video', table: 'table', chart: 'chart', connector: 'path', ink: 'pen' };
+const TYPE_ICON = { frame: 'frame', text: 'text', image: 'image', shape: 'shape', video: 'video', table: 'table', chart: 'chart', connector: 'path', ink: 'pen', model: 'cube', sim: 'sim' };
 function renderLayers() {
   const box = $('#layer-list');
   if (!box || $('#pane-layers').hidden) return;
@@ -845,6 +881,7 @@ function renderProps() {
   if (o.type === 'chart') h = chartProps(o);
   if (o.type === 'connector') { p.innerHTML = connectorProps(o) + acts; return; }
   if (o.type === 'ink') h = inkProps(o);
+  if (o.type === 'model') h = modelProps(o);
   if (o.type === 'image') h = `<h3>이미지</h3><label class="row"><span>모서리</span><input type="range" data-p="radius" min="0" max="200" value="${o.radius}"></label>`;
   if (o.type === 'video') h = `<h3>영상</h3><p class="note">편집 중에는 자리표시만 보이고, 테스트 실행과 내보낸 파일에서 재생됩니다.</p>`;
   if (o.type !== 'frame' && inPath) h += `<h4>발표자 노트</h4><textarea data-p="notes" rows="3" placeholder="발표 화면에서 P키로 봅니다">${esc(o.notes)}</textarea>`;
@@ -888,6 +925,10 @@ $('#props').addEventListener('input', e => {
   }
   if (d === 'bg') { doc.bg = f.value; document.documentElement.style.cssText = themeVars(); }
   if (d === 'duration') doc.duration = +f.value;
+  if (f.dataset.part != null) {   // 3D 모델 부품 색
+    const o = selObjs().find(x => x.type === 'model');
+    if (o) { const i = f.dataset.part; o.parts = { ...o.parts, [i]: { ...(o.parts[i] || {}), c: f.value } }; f.classList.remove('unset'); }
+  }
   if (d === 'penColor') doc.penColor = f.value;
   if (d === 'penWidth') doc.penWidth = +f.value;
   if (d === 'perspective') { doc.perspective = +f.value; applyCam(); renderPathList(); }
@@ -903,6 +944,10 @@ $('#props').addEventListener('change', e => {
 
 /* ── 파일 입력·끌어다 놓기·붙여넣기 ── */
 $('#file-image').addEventListener('change', e => { addImages([...e.target.files]); e.target.value = ''; });
+$('#file-model').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) addModelFile(f); });
+/* 3D 미리보기 창: 저장·닫기, Esc로 닫아도 WebGL 해제 */
+$('#mdlg').addEventListener('click', e => { const b = e.target.closest('[data-mv]'); if (b) closeModelPreview(b.dataset.mv === 'save'); });
+$('#mdlg').addEventListener('close', () => closeModelPreview(false));
 $('#file-video').addEventListener('change', async e => {
   const f = e.target.files[0];
   e.target.value = '';
@@ -930,6 +975,7 @@ stage.addEventListener('drop', e => {
   e.preventDefault();
   const files = [...e.dataTransfer.files], [sx, sy] = pt(e);
   if (files[0] && /\.(json|html?)$/i.test(files[0].name)) openFile(files[0]);
+  else if (files[0] && MODEL_EXT.includes(files[0].name.split('.').pop().toLowerCase())) addModelFile(files[0], onView(s2w(sx, sy)));
   else addImages(files, s2w(sx, sy));
 });
 let clip = null;

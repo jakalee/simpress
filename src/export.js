@@ -115,7 +115,7 @@ document.addEventListener('impress:stepenter',function(e){
 });
 
 document.addEventListener('click',function(e){
-  if(e.target.closest('.zc-alert'))return;   // 알림창 클릭은 화면 이동으로 넘기지 않음
+  if(e.target.closest('.zc-alert,.mv-canvas'))return;   // 알림창 클릭·3D 모델 돌리기는 화면 이동으로 넘기지 않음
   var fo=e.target.closest('.o[data-click]');
   if(fo){fxClick(fo);return;}
   if(e.target.closest('a,video,iframe,#impress-toolbar,#impress-console-button'))return;
@@ -148,7 +148,10 @@ const FX_ENTER = [['none', '없음'], ['fade', '나타나기'], ['up', '아래�
 
 function usedAssets() {
   const out = {};
-  doc.objects.forEach(o => { if (o.asset && doc.assets[o.asset]) out[o.asset] = doc.assets[o.asset]; });
+  doc.objects.forEach(o => {
+    if (o.asset && doc.assets[o.asset]) out[o.asset] = doc.assets[o.asset];
+    if (o.thumbA && doc.assets[o.thumbA]) out[o.thumbA] = doc.assets[o.thumbA];   // 3D 모델 스냅샷
+  });
   return out;
 }
 function stepAttrs(r) {
@@ -204,10 +207,14 @@ function buildShowHTML() {
   }).join('\n');
   const data = JSON.stringify({ ...doc, assets: usedAssets() }).replace(/</g, '\\u003c');
   const impressSrc = $('#impress-src').textContent;
+  /* 3D 모델이 있을 때만 three.js(CDN)를 불러오는 모듈을 넣음. 오프라인이면 스냅샷이 그대로 보임 */
+  const has3D = doc.objects.some(o => o.type === 'model' && o.asset);
+  const head3D = has3D ? `<script type="importmap">{"imports":{"three":"${MV.three}","three/addons/":"${MV.addons}"}}<\/script>` : '';
+  const run3D = has3D ? `<script type="module">${modelRuntime().replace(/<\/script/gi, '<\\/script')}<\/script>` : '';
   return `<!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(doc.title)}</title>
-<style>:root{${themeVars()};--pw:${doc.W}px;--ph:${doc.H}px}${OBJ_CSS}${SHOW_CSS}</style></head>
+<style>:root{${themeVars()};--pw:${doc.W}px;--ph:${doc.H}px}${OBJ_CSS}${SHOW_CSS}</style>${head3D}</head>
 <body class="impress-not-supported">
 <div id="impress" data-width="${doc.W}" data-height="${doc.H}" data-transition-duration="${doc.duration}" data-max-scale="4" data-min-scale="0" data-perspective="${doc.perspective}">
 ${objs}
@@ -220,6 +227,7 @@ ${steps}
 <script type="application/json" id="zc-data">${data}<\/script>
 <script>${impressSrc}<\/script>
 <script>${SHOW_RUNTIME}<\/script>
+${run3D}
 </body></html>`;
 }
 
@@ -268,8 +276,9 @@ function parseDocText(text, name) {
   const data = JSON.parse(text);
   if (Array.isArray(data.objects)) {
     /* 구조 검증: 알려진 종류만, id는 영숫자만, 숫자 칸은 숫자로 (HTML 속성 주입 방지) */
-    const TYPES = ['frame', 'text', 'image', 'shape', 'video', 'table', 'chart', 'connector', 'ink'];
-    const NUMS = ['x', 'y', 'z', 'w', 'h', 's', 'rot', 'rx', 'ry', 'opacity', 'fs', 'fw', 'sw', 'radius'];
+    const TYPES = ['frame', 'text', 'image', 'shape', 'video', 'table', 'chart', 'connector', 'ink', 'model', 'sim'];
+    const NUMS = ['x', 'y', 'z', 'w', 'h', 's', 'rot', 'rx', 'ry', 'opacity', 'fs', 'fw', 'sw', 'radius', 'speed', 'yaw', 'pitch', 'zoom', 'exposure'];
+    const HEX = /^#[0-9a-f]{6}$/i;
     const safeId = v => String(v ?? '').replace(/[^\w-]/g, '');
     data.objects = data.objects.filter(o => o && TYPES.includes(o.type));
     data.objects.forEach(o => {
@@ -277,6 +286,17 @@ function parseDocText(text, name) {
       NUMS.forEach(k => { if (k in o) { const v = +o[k]; o[k] = Number.isFinite(v) ? v : (k === 's' || k === 'opacity' ? 1 : 0); } });
       if (o.p && typeof o.p === 'object') Object.keys(o.p).forEach(k => { const v = +o.p[k]; if (Number.isFinite(v)) o.p[k] = v; else delete o.p[k]; });
       if (o.type === 'connector') { o.from = safeId(o.from); o.to = safeId(o.to); }
+      if (o.type === 'model') {
+        o.asset = safeId(o.asset); o.thumbA = safeId(o.thumbA) || null; o.srcName = String(o.srcName || '');
+        o.bg = HEX.test(o.bg) ? o.bg : null;
+        o.partNames = (Array.isArray(o.partNames) ? o.partNames : []).map(n => String(n)).slice(0, 400);
+        const parts = {};
+        Object.entries(o.parts && typeof o.parts === 'object' ? o.parts : {}).forEach(([k, p]) => {
+          if (!/^\d+$/.test(k) || !p || typeof p !== 'object') return;
+          parts[k] = { h: !!p.h, ...(HEX.test(p.c) ? { c: p.c } : {}), ...(Number.isFinite(+p.o) && p.o != null ? { o: Math.min(1, Math.max(0, +p.o)) } : {}) };
+        });
+        o.parts = parts;
+      }
       /* 인터랙션 값은 목록에 있는 것만, 링크는 http(s)만 */
       const pick = (v, list) => list.some(([k]) => k === v) ? v : 'none';
       if ('hover' in o) o.hover = pick(o.hover, FX_HOVER);

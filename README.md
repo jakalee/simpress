@@ -37,6 +37,7 @@
 - 8 SVG chart types — paste ranges from Excel, automatic thinning of large data, entrance animation
 - Connectors that follow their objects (straight, elbow, curved) and a freehand pen
 - Interactions — hover effects, click actions (go to slide, open link, show/hide, run JavaScript), entrance effects
+- 3D models — import GLB, glTF, STL, OBJ, and CAD (STEP, IGES); live rendering in the presentation (auto-rotate, orbit, animation) with per-part visibility and color. three.js and the CAD converter load on demand from version-pinned CDNs; without internet a snapshot image is shown instead
 
 ## Privacy and portability
 

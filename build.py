@@ -8,7 +8,7 @@ html = (src / "index.html").read_text(encoding="utf-8")
 html = html.replace("/*INLINE:css*/", (src / "editor.css").read_text(encoding="utf-8"))
 scripts = "\n".join(
     (src / name).read_text(encoding="utf-8")
-    for name in ("elements.js", "chart.js", "canvas.js", "export.js", "editor.js")
+    for name in ("elements.js", "chart.js", "model3d.js", "canvas.js", "export.js", "editor.js")
 )
 html = html.replace("/*INLINE:js*/", scripts)
 impress = (root / "vendor" / "impress.js").read_text(encoding="utf-8")
