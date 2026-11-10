@@ -48,8 +48,6 @@ const OBJ_CSS = `
 .o-embed .emb-ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3%;border:2px solid rgba(120,128,140,.35);border-radius:14px;background:rgba(128,136,150,.08);color:rgba(90,98,110,.95);font:30px -apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;text-align:center;padding:0 6%;box-sizing:border-box;overflow:hidden}
 .o-embed .emb-ph span{font-size:.65em;opacity:.75;word-break:break-all}
 .o-embed .emb-frame{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff;border-radius:6px}
-.o-embed .emb-cover{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:4%;cursor:pointer;background:linear-gradient(transparent 70%,rgba(0,0,0,.28))}
-.o-embed .emb-cover span{padding:.4em 1em;border-radius:999px;background:rgba(20,26,36,.82);color:#fff;font:22px -apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif}
 .o-connector,.o-ink{pointer-events:none}.o-connector .hit,.o-ink .hit{pointer-events:stroke}
 .o-chart.play .ca{animation:.75s cubic-bezier(.2,.8,.2,1) both}
 .o-chart.play .cb.ca{transform-box:fill-box;transform-origin:50% 100%;animation-name:chUp}
@@ -82,7 +80,7 @@ function makeObj(type, props) {
   if (type === 'chart') Object.assign(base, { kind: 'bar', title: '', fs: 28, font: 'sans', legend: true, labels: false, grid: true, anim: true,
     data: [['항목', '2024', '2025'], ['1분기', '42', '55'], ['2분기', '58', '61'], ['3분기', '49', '72'], ['4분기', '66', '80']] });
   if (type === 'model') Object.assign(base, { asset: null, srcName: '', thumbA: null, thumbSig: '', partNames: [], bg: null, spin: true, speed: 1, orbit: true, anim: true, yaw: 30, pitch: 20, zoom: 1, exposure: 1, parts: {} });
-  if (type === 'embed') Object.assign(base, { mode: 'html', html: '', url: '', srcName: '', cover: true });
+  if (type === 'embed') Object.assign(base, { mode: 'html', html: '', url: '', srcName: '' });
   if (type === 'connector') Object.assign(base, { from: null, to: null, route: 'elbow', stroke: null, sw: 6, head: 'end', dash: false, d: '' });
   if (type === 'ink') Object.assign(base, { d: '', stroke: null, sw: 6 });
   if (type === 'frame') Object.assign(base, { frame: 'bracket', color: null, fill: null, notes: '' });

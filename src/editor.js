@@ -669,8 +669,7 @@ function embedProps(o) {
        ${refs.length ? `<p class="note warn">같은 폴더 파일을 부르는 경로 ${refs.length}개는 동작하지 않습니다: ${esc(refs.slice(0, 3).join(', '))}</p>` : ''}
        <p class="note">한 파일로 완결된 HTML만 됩니다 (라이브러리는 CDN 주소로). 격리된 상태로 실행되어 이 편집기의 데이터에는 접근할 수 없습니다.</p>`;
   return `<h3>웹 임베드</h3>${seg('embedMode', [['html', 'HTML'], ['url', '웹 주소']], o.mode)}${body}
-    <label class="row"><span>'클릭해서 조작' 덮개</span><input type="checkbox" data-act="toggleProp" data-arg="cover"${o.cover !== false ? ' checked' : ''}></label>
-    <p class="note">조작이 필요한 페이지는 켜 두세요 (외부 iframe은 첫 클릭을 놓칩니다). 보기만 하는 애니메이션은 꺼도 됩니다.</p>
+    <p class="note">발표 중 바로 클릭·드래그로 조작됩니다. 안을 클릭한 뒤 화살표 키는 임베드로 가니, 슬라이드 넘김은 바깥 클릭·리모컨(PageDown)으로 하세요.</p>
     <button class="wide" data-act="embedPreview">미리보기 (실행해 보기)</button>
     <p class="note">편집 화면에서는 실행하지 않고, 발표 화면에서 이 슬라이드에 들어올 때 불러옵니다. PDF에는 자리표시로 들어갑니다.</p>`;
 }

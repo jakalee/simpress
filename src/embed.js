@@ -189,16 +189,18 @@ function start(el){
   var id=el.getAttribute('data-id'),o=data.objects.find(function(x){return x.id===id;});if(!o)return;
   var f=document.createElement('iframe');f.className='emb-frame';
   f.setAttribute('sandbox',o.mode==='url'?SBU:SBH);f.setAttribute('allow','autoplay; fullscreen; xr-spatial-tracking');
-  if(o.mode==='url'){if(!web(o.url))return;f.src=o.url;}else f.srcdoc=o.html||'';
+  if(o.mode==='url'){if(!web(o.url))return;f.src=o.url;}else f.srcdoc=(o.html||'')+KEYFWD;
   el.appendChild(f);
-  /* 외부 iframe은 첫 클릭을 포커스로 써 버리므로, '클릭해서 조작' 덮개로 그 클릭을 받음 */
-  if(o.cover!==false){
-    var c=document.createElement('div');c.className='emb-cover';c.innerHTML='<span>클릭해서 조작</span>';
-    c.addEventListener('click',function(e){e.stopPropagation();c.remove();try{f.focus();}catch(_){}});
-    el.appendChild(c);
-  }
 }
-function stop(el){[].forEach.call(el.querySelectorAll('.emb-frame,.emb-cover'),function(x){x.remove();});}
+/* 임베드 안을 클릭하면 키 포커스가 그 안으로 들어가므로, 리모컨 키(PageUp/PageDown)는 발표로 돌려줌 */
+var KEYFWD='<scr'+'ipt>addEventListener("keydown",function(e){if(e.key==="PageDown"||e.key==="PageUp"){e.preventDefault();parent.postMessage({zcKey:e.key},"*");}},true);</scr'+'ipt>';
+window.addEventListener('message',function(e){
+  var d=e.data;if(!d||(d.zcKey!=='PageDown'&&d.zcKey!=='PageUp'))return;
+  var ok=[].some.call(document.querySelectorAll('.emb-frame'),function(f){return f.contentWindow===e.source;});if(!ok)return;
+  try{document.activeElement&&document.activeElement.blur();}catch(_){}
+  if(window.impress){var a=impress();d.zcKey==='PageDown'?a.next():a.prev();}
+});
+function stop(el){[].forEach.call(el.querySelectorAll('.emb-frame'),function(x){x.remove();});}
 var els=function(s){return document.querySelectorAll('.o-embed[data-step="'+s+'"]');};
 document.addEventListener('impress:stepenter',function(e){[].forEach.call(els(e.target.id),start);});
 document.addEventListener('impress:stepleave',function(e){[].forEach.call(els(e.target.id),stop);});

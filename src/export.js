@@ -332,7 +332,7 @@ function parseDocText(text, name) {
       if (o.type === 'embed') {
         /* HTML은 sandbox iframe에서만 실행되므로 내용은 그대로 두고, 종류·주소만 검증 */
         o.mode = o.mode === 'url' ? 'url' : 'html';
-        o.html = String(o.html || ''); o.srcName = String(o.srcName || ''); o.cover = o.cover !== false;
+        o.html = String(o.html || ''); o.srcName = String(o.srcName || '');
         o.url = /^https?:\/\/[^\s]+$/i.test(String(o.url || '').trim()) ? String(o.url).trim() : '';
       }
       if (o.type === 'model') {
