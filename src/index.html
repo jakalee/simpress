@@ -90,7 +90,9 @@
   <div id="pane-slides" class="pane">
     <div id="path-list"></div>
     <div class="pane-b">
-      <button class="wide" data-act="newSlide">＋ 새 슬라이드</button>
+      <div class="addslide"><button class="wide" data-act="newSlide" title="마지막에 쓴 레이아웃으로 추가">＋ 새 슬라이드</button>
+        <details class="dd up" id="dd-layout"><summary class="wide" title="레이아웃 고르기">▾</summary><div class="pop layouts" id="layout-pop"></div></details></div>
+      <button class="wide" data-act="deckDialog">템플릿으로 새 덱…</button>
       <button class="wide addview" data-act="addView">＋ 현재 화면을 경로에 추가</button>
     </div>
   </div>
@@ -153,6 +155,11 @@
   <div class="mv-head"><b>3D 미리보기</b><span class="note">드래그: 돌리기 · 휠: 확대·축소</span></div>
   <div id="mv-host"></div>
   <div class="dlg-b"><button class="tb" data-mv="cancel">닫기</button><button class="tb primary" data-mv="save">이 각도로 저장</button></div>
+</dialog>
+<dialog id="tdlg">
+  <div class="mv-head"><b>템플릿으로 새 덱</b><span class="note">테마 · 프레임 · 캔버스 배치가 묶인 6장짜리 기본 덱을 만듭니다</span></div>
+  <div id="deck-list"></div>
+  <div class="dlg-b"><button class="tb" data-deck="close">닫기</button></div>
 </dialog>
 <dialog id="edlg">
   <div class="mv-head"><b>웹 임베드 미리보기</b><span class="note">발표 화면과 같은 격리(sandbox) 상태로 실행합니다</span></div>

@@ -279,8 +279,10 @@ function freeSpot(ref) {
   const v = mulV(R, [w * 1.15, 0, 0]);
   return [ref.x + v[0], ref.y + v[1], ref.z + v[2]];
 }
-function newSlide() {
+function newSlide(layout) {
   if (editing) endEdit();
+  layout = LAYOUTS[layout] ? layout : (doc.lastLayout || 'bullets');
+  doc.lastLayout = layout;
   const i = curStep(), ref = getObj(doc.path[i >= 0 ? i : doc.path.length - 1]);
   let pos, s;
   if (ref) {
@@ -292,12 +294,8 @@ function newSlide() {
     pos = onView(viewCenter());
   }
   if (!(s > 0 && Number.isFinite(s)) || ![pos.x, pos.y].every(Number.isFinite)) { s = 1; pos = { x: 0, y: 0, z: 0, rot: 0, rx: 0, ry: 0 }; }
-  const f = insertObj(makeObj('frame', { ...pos, frame: 'rect', slide: true, w: doc.W, h: doc.H, s }));
-  const v = mulV(objM(f), [0, -doc.H * s * .3, 0]);
-  insertObj(makeObj('text', {
-    x: f.x + v[0], y: f.y + v[1], z: f.z + v[2], rot: f.rot, rx: f.rx, ry: f.ry, s,
-    html: '제목', style: 'title', fs: TEXT_STYLES.title.fs, fw: TEXT_STYLES.title.fw, align: 'center',
-  }));
+  const f = makeSlideFrame({ ...pos, s });
+  applyLayout(f, layout);
   const at = i >= 0 ? i + 1 : doc.path.length;
   doc.path.splice(at, 0, f.id);
   activeStep = at;
@@ -411,6 +409,11 @@ const ACT = {
   },
   embedMode(m) { selObjs().filter(x => x.type === 'embed').forEach(o => { o.mode = m; renderObj(o); }); commit(); renderProps(); },
   embedPreview: () => openEmbedPreview(),
+  deckDialog() {
+    $('#deck-list').innerHTML = Object.entries(DECKS).map(([k, T]) => `<div class="deck">${deckPreviewSVG(k)}<b>${esc(T.name)}</b><span class="note">${esc(T.desc)}</span>
+      <div class="grid2"><button class="tb primary" data-deck="new" data-k="${k}">새 문서로</button><button class="tb" data-deck="append" data-k="${k}"${doc.path.length ? '' : ' disabled'}>지금 문서에 이어 붙이기</button></div></div>`).join('');
+    $('#tdlg').showModal();
+  },
   modelPreview: openModelPreview,
   /* 부품 보이기/숨기기·모두 초기화 */
   partVis(i) { const o = selObjs().find(x => x.type === 'model'); if (!o) return; const p = o.parts[i] || {}; o.parts = { ...o.parts, [i]: { ...p, h: !p.h } }; commit(); renderProps(); },
@@ -543,14 +546,15 @@ document.addEventListener('click', e => {
 
 /* ── 메뉴 막대: 항목은 모두 ACT 명령을 부릅니다 [이름, 명령, 인자, 단축키] ── */
 const MENUS = [
-  ['파일', [['새 캔버스', 'newDoc'], ['열기…', 'open', '', '⌘O'], '-', ['JSON 저장', 'saveJSON', '', '⌘S'], ['HTML 내보내기', 'exportHTML', '', '⇧⌘E'], ['PDF로 내보내기 (슬라이드별)', 'exportPDF'], '-',
+  ['파일', [['새 캔버스', 'newDoc'], ['템플릿으로 새 덱…', 'deckDialog'], ['열기…', 'open', '', '⌘O'], '-', ['JSON 저장', 'saveJSON', '', '⌘S'], ['HTML 내보내기', 'exportHTML', '', '⇧⌘E'], ['PDF로 내보내기 (슬라이드별)', 'exportPDF'], '-',
     ['지금 화면을 overview로 지정', 'setOverview'], ['overview 자동으로 되돌리기', 'clearOverview']]],
   ['편집', [['실행 취소', 'undo', '', '⌘Z'], ['다시 실행', 'redo', '', '⇧⌘Z'], '-', ['복사', 'copy', '', '⌘C'], ['붙여넣기', 'paste', '', '⌘V'], ['복제', 'dup', '', '⌘D'], ['삭제', 'del', '', 'Delete'], '-',
     ['모두 선택', 'selectAll', '', '⌘A'], ['선택 해제', 'deselect', '', 'Esc']]],
   ['삽입', [['새 슬라이드', 'newSlide'], '-', ['텍스트', 'text', '', '더블클릭'], ['대괄호 프레임', 'frame', 'bracket'], ['원 프레임', 'frame', 'circle'], ['사각 프레임', 'frame', 'rect'], ['숨은 프레임', 'frame', 'hidden'], '-',
     ['도형…', 'shapeMenu'], ['사각형', 'shape', 'rect'], ['원', 'shape', 'ellipse'], ['화살표', 'shape', 'arrow'], ['선', 'shape', 'line'], '-', ['표', 'table'], ['막대 차트', 'chart', 'bar'], ['꺾은선 차트', 'chart', 'line'], ['원 차트', 'chart', 'pie'], '-', ['3D 모델… (GLB·STL·OBJ·STEP·IGES)', 'model'], ['웹 임베드: HTML 파일…', 'embedFile'], ['웹 임베드: 웹 주소…', 'embedURL'], '-', ['연결선 잇기', 'connect'], ['펜으로 그리기', 'pen'], '-',
     ['이미지 파일…', 'image'], ['이미지 주소…', 'imageURL'], ['영상 주소…', 'videoURL'], ['영상 파일…', 'videoFile']]],
-  ['슬라이드', [['처음부터 발표', 'runStart'], ['현재 슬라이드부터 발표', 'run', '', '⌘↵'], '-', ['새 슬라이드', 'newSlide'], ['현재 슬라이드 복제', 'dupSlide'], ['현재 슬라이드 삭제', 'delSlide'], '-',
+  ['슬라이드', [['처음부터 발표', 'runStart'], ['현재 슬라이드부터 발표', 'run', '', '⌘↵'], '-', ['새 슬라이드', 'newSlide'],
+    ...Object.entries(LAYOUTS).map(([k, L]) => ['  └ ' + L.name, 'newSlide', k]), ['템플릿으로 새 덱…', 'deckDialog'], '-', ['현재 슬라이드 복제', 'dupSlide'], ['현재 슬라이드 삭제', 'delSlide'], '-',
     ['이전 슬라이드', 'prevSlide', '', 'PageUp'], ['다음 슬라이드', 'nextSlide', '', 'PageDown'], ['앞으로 옮기기', 'moveSlide', '-1'], ['뒤로 옮기기', 'moveSlide', '1'], '-',
     ['슬라이드 이름 바꾸기…', 'renameSlide'], ['경로 잇기 모드', 'path'], ['지금 화면을 경로에 추가', 'addView'], '-', ['슬라이드를 PDF로 내보내기', 'exportPDF']]],
   ['레이어', [['맨 앞으로', 'front', '', '⇧⌘]'], ['앞으로', 'forward', '', '⌘]'], ['뒤로', 'backward', '', '⌘['], ['맨 뒤로', 'back', '', '⇧⌘['], '-',
@@ -987,6 +991,21 @@ $('#file-html').addEventListener('change', async e => {
 });
 $('#embed-pop').insertAdjacentHTML('beforeend', '<h5 class="ph">예제 (p5.js)</h5>' + Object.entries(EMBED_EXAMPLES).map(([k, t]) => `<button data-act="embedExample" data-arg="${k}">${esc(t.name)}</button>`).join(''));
 $('#edlg').addEventListener('click', e => { if (e.target.closest('[data-emb=close]')) closeEmbedPreview(); });
+/* 레이아웃 고르기 (새 슬라이드 ▾) */
+$('#layout-pop').innerHTML = Object.entries(LAYOUTS).map(([k, L]) => `<button data-act="newSlide" data-arg="${k}">${layoutIcon(k)}<span>${esc(L.name)}</span></button>`).join('');
+/* 템플릿 창: 새 문서로 만들기 전에는 지금 문서가 사라진다고 확인 */
+$('#tdlg').addEventListener('click', async e => {
+  const b = e.target.closest('[data-deck]');
+  if (!b) return;
+  if (b.dataset.deck === 'close') { $('#tdlg').close(); return; }
+  const k = b.dataset.k;
+  if (b.dataset.deck === 'new' && doc.objects.length) {
+    $('#tdlg').close();
+    const ok = await ask({ title: '새 덱 만들기', msg: '지금 캔버스를 비우고 템플릿으로 새로 만듭니다. 지금 작업이 필요하면 먼저 JSON으로 저장하세요. (실행 취소로는 되돌릴 수 없습니다)', ok: '새로 만들기' });
+    if (!ok) return;
+  } else $('#tdlg').close();
+  buildDeck(k, DEMO_OUTLINE, { replace: b.dataset.deck === 'new' });
+});
 $('#edlg').addEventListener('close', () => { $('#emb-host').innerHTML = ''; });
 /* 3D 미리보기 창: 저장·닫기, Esc로 닫아도 WebGL 해제 */
 $('#mdlg').addEventListener('click', e => { const b = e.target.closest('[data-mv]'); if (b) closeModelPreview(b.dataset.mv === 'save'); });

@@ -31,7 +31,7 @@ const OBJ_CSS = `
 .o img,.o video,.o iframe{display:block;width:100%;height:100%;border:0}
 .o img{object-fit:fill;-webkit-user-drag:none}
 .txt{white-space:pre-wrap;word-break:keep-all;overflow-wrap:break-word;line-height:1.28;outline:0;min-width:.5em;min-height:1em}
-.txt p,.txt ul,.txt ol{margin:0}.txt ul,.txt ol{padding-left:1.2em}
+.txt p,.txt ul,.txt ol{margin:0}.txt ul,.txt ol{padding-left:1.2em}.txt li+li{margin-top:.35em}
 .vidlink{position:absolute;right:0;bottom:-30px;font:16px sans-serif;color:var(--c-body)}
 .o-shape .sbox{position:absolute;inset:0;display:flex;align-items:center;padding:6% 8%;box-sizing:border-box}
 .stxt{width:100%;white-space:pre-wrap;word-break:keep-all;overflow-wrap:break-word;line-height:1.25;outline:0;min-height:1em}

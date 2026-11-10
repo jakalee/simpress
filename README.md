@@ -33,6 +33,7 @@
 - PDF export, one page per slide (vector text; 3D models as snapshots)
 - Menu bar (File, Edit, Insert, Slide, Layer, View, Help) and a shortcut sheet (`?`)
 - 16:9 slides (add, duplicate, delete, reorder) and a layer panel (stacking order, lock, hide)
+- 7 slide layouts (cover, section, bullets, two columns, image + text, closing, blank) and 5 deck templates combining theme, frame style, and canvas arrangement (row, grid, radial zoom, 3D stairs)
 - 24 shapes (polygons, stars, donuts, arrows, callouts, flowchart) with text inside
 - Tables with in-place cell editing, Tab navigation, and row/column controls
 - 8 SVG chart types — paste ranges from Excel, automatic thinning of large data, entrance animation
