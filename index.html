@@ -7463,6 +7463,13 @@ if(preview)document.body.classList.add('zc-preview');
 var data=JSON.parse(document.getElementById('zc-data').textContent);
 document.querySelectorAll('[data-a]').forEach(function(el){var a=data.assets[el.getAttribute('data-a')];if(a)el.src=a;});
 var api=impress();api.init();
+/* 콘솔 미리보기는 '#step-3' 주소를 쓰므로 브라우저가 그 요소로 페이지를 스크롤해 화면이 어긋남.
+   크롬은 file://을 다른 출처로 봐서 콘솔 쪽에서 되돌릴 수 없으니, 문서 스스로 스크롤을 0에 고정 */
+var noScroll=function(){var b=document.body,d=document.documentElement;if(window.scrollX||window.scrollY)window.scrollTo(0,0);b.scrollTop=b.scrollLeft=d.scrollTop=d.scrollLeft=0;};
+window.addEventListener('scroll',noScroll);
+window.addEventListener('hashchange',function(){noScroll();setTimeout(noScroll,0);});
+document.addEventListener('impress:stepenter',noScroll);
+noScroll();setTimeout(noScroll,0);
 if(preview)return;
 
 function openConsole(){
