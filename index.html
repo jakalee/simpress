@@ -5436,7 +5436,8 @@ const FONTS = {
   serif: '"Apple Myungjo","Noto Serif KR","Nanum Myeongjo","Batang",Georgia,serif',
   mono: 'ui-monospace,"SF Mono","D2Coding",Menlo,Consolas,monospace',
 };
-const TEXT_STYLES = { title: { fs: 120, fw: 800 }, sub: { fs: 64, fw: 600 }, body: { fs: 38, fw: 400 } };
+/* 기본 글자 크기 (이전 120·64·38에서 약 75%로 줄임) */
+const TEXT_STYLES = { title: { fs: 90, fw: 800 }, sub: { fs: 48, fw: 600 }, body: { fs: 28, fw: 400 } };
 
 /* 객체 CSS — 편집기·썸네일·내보낸 파일이 모두 같은 규칙을 씁니다 */
 const OBJ_CSS = `
@@ -5486,7 +5487,7 @@ function themeVars() {
 
 function makeObj(type, props) {
   const base = { id: uid(), type, x: 0, y: 0, z: 0, w: 100, h: 100, s: 1, rot: 0, rx: 0, ry: 0, opacity: 1 };
-  if (type === 'text') Object.assign(base, { html: '', style: 'body', fs: 38, fw: 400, color: null, align: 'left', font: 'sans', auto: true });
+  if (type === 'text') Object.assign(base, { html: '', style: 'body', fs: TEXT_STYLES.body.fs, fw: 400, color: null, align: 'left', font: 'sans', auto: true });
   if (type === 'shape') Object.assign(base, { shape: 'rect', p: {}, fill: null, stroke: null, sw: 0, text: '', fs: 40, color: null, align: 'center', font: 'sans' });
   if (type === 'table') Object.assign(base, { rows: [['항목', '내용', '비고'], ['', '', ''], ['', '', ''], ['', '', '']], head: true, stripe: true, fs: 30, color: null, fill: null, stroke: null, align: 'left', font: 'sans' });
   if (type === 'chart') Object.assign(base, { kind: 'bar', title: '', fs: 28, font: 'sans', legend: true, labels: false, grid: true, anim: true,
@@ -5611,7 +5612,7 @@ function frameSVG(o, mode) {
   const w = o.w, h = o.h, c = o.color || 'var(--c-accent)', m = Math.min(w, h), sw = m * .012, i = sw / 2;
   const fill = o.fill ? `fill="${esc(o.fill)}"` : 'fill="none"';
   if (o.frame === 'hidden') {
-    if (mode === 'show' || mode === 'thumb') return '';
+    if (mode === 'show' || mode === 'thumb' || mode === 'print') return '';
     return `<svg viewBox="0 0 ${w} ${h}"><rect x="${i}" y="${i}" width="${w - sw}" height="${h - sw}" fill="none" stroke="#8892a0" stroke-width="${sw * .7}" stroke-dasharray="${sw * 4} ${sw * 3}"/></svg>`;
   }
   const st = `stroke="${esc(c)}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"`;
@@ -5637,7 +5638,8 @@ function objInner(o, mode, srcOf) {
   if (o.type === 'connector') return connectorSVG(o);
   if (o.type === 'model') {
     /* 편집 화면·썸네일은 스냅샷, 발표 화면은 스냅샷 위에 실시간 캔버스가 얹힘 (오프라인이면 스냅샷 그대로) */
-    const src = !o.thumbA ? '' : mode === 'show' ? `data-a="${esc(o.thumbA)}"` : `src="${esc(assetURL[o.thumbA] || '')}"`;
+    const src = !o.thumbA ? '' : mode === 'show' ? `data-a="${esc(o.thumbA)}"`
+      : mode === 'print' ? `src="${esc(doc.assets[o.thumbA] || '')}"` : `src="${esc(assetURL[o.thumbA] || '')}"`;
     return src ? `<img class="mv-snap" alt="" draggable="false" ${src}>`
       : `<div class="mv-wait"><svg viewBox="0 0 24 24" width="22%" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="M3 7l9 5 9-5M12 12v10"/></svg><span>3D 모델 준비 중…</span></div>`;
   }
@@ -7142,6 +7144,47 @@ ${run3D}
 </body></html>`;
 }
 
+/* ── PDF: 슬라이드(경로 단계)마다 한 페이지. 브라우저 인쇄의 'PDF로 저장'을 쓰므로 글자가 벡터로 남습니다 ── */
+function buildPrintHTML() {
+  const W = doc.W, H = doc.H;
+  const regions = (doc.path.length ? doc.path.map(id => getObj(id)).filter(Boolean).map(regionOf) : [overviewRegion()]);
+  const srcOf = o => o.asset && doc.assets[o.asset] ? `src="${esc(doc.assets[o.asset])}"` : (o.src ? `src="${esc(o.src)}"` : '');
+  const pages = regions.map(r => {
+    const k = Math.min(W / r.w, H / r.h), d = doc.perspective / k, reach = Math.hypot(r.w, r.h) / 2;
+    /* 이 슬라이드 근처 객체만 (발표 시작 때 숨겨지는 객체는 제외) */
+    const objs = doc.objects.filter(o => !o.fxHidden && Math.hypot(o.x - r.x, o.y - r.y) < reach + Math.hypot(o.w, o.h) * o.s / 2);
+    return `<section class="page"><div class="pw" style="transform:translate(${W / 2}px,${H / 2}px) scale(${k}) perspective(${d}px) rotateZ(${-(r.r || 0)}deg) rotateY(${-(r.ry || 0)}deg) rotateX(${-(r.rx || 0)}deg) translate3d(${-r.x}px,${-r.y}px,${-(r.z || 0)}px)">${objs.map(o => objHTML(o, 'print', srcOf)).join('')}</div></section>`;
+  }).join('\n');
+  return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${esc(doc.title)}</title>
+<style>:root{${themeVars()}}${OBJ_CSS}
+@page{size:${W}px ${H}px;margin:0}
+html,body{margin:0;padding:0;background:var(--c-bg)}
+*{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.page{position:relative;width:${W}px;height:${H}px;overflow:hidden;background:var(--c-bg);break-after:page;page-break-after:always}
+.page:last-child{break-after:auto;page-break-after:auto}
+.pw{position:absolute;left:0;top:0;transform-origin:0 0;transform-style:preserve-3d}
+</style></head><body>${pages}</body></html>`;
+}
+async function exportPDF() {
+  if (editing) endEdit();
+  const n = doc.path.length || 1;
+  toast(`슬라이드 ${n}장을 PDF로 준비하는 중… 인쇄 창에서 'PDF로 저장'을 고르세요`);
+  const f = document.createElement('iframe');
+  f.style.cssText = `position:fixed;left:-${doc.W + 100}px;top:0;width:${doc.W}px;height:${doc.H}px;border:0`;
+  document.body.appendChild(f);
+  await new Promise(res => { f.onload = res; f.srcdoc = buildPrintHTML(); });
+  const d = f.contentDocument;
+  /* 이미지·글꼴이 다 그려진 뒤 인쇄 (안 그러면 빈 칸이 찍힘) */
+  await Promise.all([...d.images].map(img => img.decode ? img.decode().catch(() => {}) : null));
+  if (d.fonts && d.fonts.ready) await d.fonts.ready;
+  const prevTitle = document.title;
+  document.title = safeName();   // 크롬은 '저장' 파일 이름에 제목을 씁니다
+  f.contentWindow.focus();
+  f.contentWindow.print();
+  document.title = prevTitle;
+  setTimeout(() => f.remove(), 1000);
+}
+
 function download(name, blob) {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -7638,6 +7681,7 @@ const ACT = {
   tblRow: d => tableResize(+d, 0), tblCol: d => tableResize(0, +d),
   chart: k => addChart(k || 'bar'),
   model: () => $('#file-model').click(),
+  exportPDF: () => exportPDF(),
   modelPreview: openModelPreview,
   /* 부품 보이기/숨기기·모두 초기화 */
   partVis(i) { const o = selObjs().find(x => x.type === 'model'); if (!o) return; const p = o.parts[i] || {}; o.parts = { ...o.parts, [i]: { ...p, h: !p.h } }; commit(); renderProps(); },
@@ -7770,7 +7814,7 @@ document.addEventListener('click', e => {
 
 /* ── 메뉴 막대: 항목은 모두 ACT 명령을 부릅니다 [이름, 명령, 인자, 단축키] ── */
 const MENUS = [
-  ['파일', [['새 캔버스', 'newDoc'], ['열기…', 'open', '', '⌘O'], '-', ['JSON 저장', 'saveJSON', '', '⌘S'], ['HTML 내보내기', 'exportHTML', '', '⇧⌘E'], '-',
+  ['파일', [['새 캔버스', 'newDoc'], ['열기…', 'open', '', '⌘O'], '-', ['JSON 저장', 'saveJSON', '', '⌘S'], ['HTML 내보내기', 'exportHTML', '', '⇧⌘E'], ['PDF로 내보내기 (슬라이드별)', 'exportPDF'], '-',
     ['지금 화면을 overview로 지정', 'setOverview'], ['overview 자동으로 되돌리기', 'clearOverview']]],
   ['편집', [['실행 취소', 'undo', '', '⌘Z'], ['다시 실행', 'redo', '', '⇧⌘Z'], '-', ['복사', 'copy', '', '⌘C'], ['붙여넣기', 'paste', '', '⌘V'], ['복제', 'dup', '', '⌘D'], ['삭제', 'del', '', 'Delete'], '-',
     ['모두 선택', 'selectAll', '', '⌘A'], ['선택 해제', 'deselect', '', 'Esc']]],
@@ -7779,7 +7823,7 @@ const MENUS = [
     ['이미지 파일…', 'image'], ['이미지 주소…', 'imageURL'], ['영상 주소…', 'videoURL'], ['영상 파일…', 'videoFile']]],
   ['슬라이드', [['처음부터 발표', 'runStart'], ['현재 슬라이드부터 발표', 'run', '', '⌘↵'], '-', ['새 슬라이드', 'newSlide'], ['현재 슬라이드 복제', 'dupSlide'], ['현재 슬라이드 삭제', 'delSlide'], '-',
     ['이전 슬라이드', 'prevSlide', '', 'PageUp'], ['다음 슬라이드', 'nextSlide', '', 'PageDown'], ['앞으로 옮기기', 'moveSlide', '-1'], ['뒤로 옮기기', 'moveSlide', '1'], '-',
-    ['슬라이드 이름 바꾸기…', 'renameSlide'], ['경로 잇기 모드', 'path'], ['지금 화면을 경로에 추가', 'addView']]],
+    ['슬라이드 이름 바꾸기…', 'renameSlide'], ['경로 잇기 모드', 'path'], ['지금 화면을 경로에 추가', 'addView'], '-', ['슬라이드를 PDF로 내보내기', 'exportPDF']]],
   ['레이어', [['맨 앞으로', 'front', '', '⇧⌘]'], ['앞으로', 'forward', '', '⌘]'], ['뒤로', 'backward', '', '⌘['], ['맨 뒤로', 'back', '', '⇧⌘['], '-',
     ['잠금 전환', 'toggleLock', '', '⇧⌘L'], ['표시 전환', 'toggleHide', '', '⇧⌘H'], ['이름 바꾸기…', 'renameObj'], '-', ['레이어 패널', 'leftTab', 'layers']]],
   ['보기', [['확대', 'zoomIn', '', '⌘='], ['축소', 'zoomOut', '', '⌘−'], ['전체 보기', 'fit', '', '⇧1'], ['선택 객체로 이동', 'view', '', '⇧2'], ['화면 회전 풀기', 'resetRot'], '-',

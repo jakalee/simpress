@@ -20,7 +20,8 @@ const FONTS = {
   serif: '"Apple Myungjo","Noto Serif KR","Nanum Myeongjo","Batang",Georgia,serif',
   mono: 'ui-monospace,"SF Mono","D2Coding",Menlo,Consolas,monospace',
 };
-const TEXT_STYLES = { title: { fs: 120, fw: 800 }, sub: { fs: 64, fw: 600 }, body: { fs: 38, fw: 400 } };
+/* 기본 글자 크기 (이전 120·64·38에서 약 75%로 줄임) */
+const TEXT_STYLES = { title: { fs: 90, fw: 800 }, sub: { fs: 48, fw: 600 }, body: { fs: 28, fw: 400 } };
 
 /* 객체 CSS — 편집기·썸네일·내보낸 파일이 모두 같은 규칙을 씁니다 */
 const OBJ_CSS = `
@@ -70,7 +71,7 @@ function themeVars() {
 
 function makeObj(type, props) {
   const base = { id: uid(), type, x: 0, y: 0, z: 0, w: 100, h: 100, s: 1, rot: 0, rx: 0, ry: 0, opacity: 1 };
-  if (type === 'text') Object.assign(base, { html: '', style: 'body', fs: 38, fw: 400, color: null, align: 'left', font: 'sans', auto: true });
+  if (type === 'text') Object.assign(base, { html: '', style: 'body', fs: TEXT_STYLES.body.fs, fw: 400, color: null, align: 'left', font: 'sans', auto: true });
   if (type === 'shape') Object.assign(base, { shape: 'rect', p: {}, fill: null, stroke: null, sw: 0, text: '', fs: 40, color: null, align: 'center', font: 'sans' });
   if (type === 'table') Object.assign(base, { rows: [['항목', '내용', '비고'], ['', '', ''], ['', '', ''], ['', '', '']], head: true, stripe: true, fs: 30, color: null, fill: null, stroke: null, align: 'left', font: 'sans' });
   if (type === 'chart') Object.assign(base, { kind: 'bar', title: '', fs: 28, font: 'sans', legend: true, labels: false, grid: true, anim: true,
@@ -195,7 +196,7 @@ function frameSVG(o, mode) {
   const w = o.w, h = o.h, c = o.color || 'var(--c-accent)', m = Math.min(w, h), sw = m * .012, i = sw / 2;
   const fill = o.fill ? `fill="${esc(o.fill)}"` : 'fill="none"';
   if (o.frame === 'hidden') {
-    if (mode === 'show' || mode === 'thumb') return '';
+    if (mode === 'show' || mode === 'thumb' || mode === 'print') return '';
     return `<svg viewBox="0 0 ${w} ${h}"><rect x="${i}" y="${i}" width="${w - sw}" height="${h - sw}" fill="none" stroke="#8892a0" stroke-width="${sw * .7}" stroke-dasharray="${sw * 4} ${sw * 3}"/></svg>`;
   }
   const st = `stroke="${esc(c)}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"`;
@@ -221,7 +222,8 @@ function objInner(o, mode, srcOf) {
   if (o.type === 'connector') return connectorSVG(o);
   if (o.type === 'model') {
     /* 편집 화면·썸네일은 스냅샷, 발표 화면은 스냅샷 위에 실시간 캔버스가 얹힘 (오프라인이면 스냅샷 그대로) */
-    const src = !o.thumbA ? '' : mode === 'show' ? `data-a="${esc(o.thumbA)}"` : `src="${esc(assetURL[o.thumbA] || '')}"`;
+    const src = !o.thumbA ? '' : mode === 'show' ? `data-a="${esc(o.thumbA)}"`
+      : mode === 'print' ? `src="${esc(doc.assets[o.thumbA] || '')}"` : `src="${esc(assetURL[o.thumbA] || '')}"`;
     return src ? `<img class="mv-snap" alt="" draggable="false" ${src}>`
       : `<div class="mv-wait"><svg viewBox="0 0 24 24" width="22%" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="M3 7l9 5 9-5M12 12v10"/></svg><span>3D 모델 준비 중…</span></div>`;
   }

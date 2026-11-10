@@ -231,6 +231,47 @@ ${run3D}
 </body></html>`;
 }
 
+/* ── PDF: 슬라이드(경로 단계)마다 한 페이지. 브라우저 인쇄의 'PDF로 저장'을 쓰므로 글자가 벡터로 남습니다 ── */
+function buildPrintHTML() {
+  const W = doc.W, H = doc.H;
+  const regions = (doc.path.length ? doc.path.map(id => getObj(id)).filter(Boolean).map(regionOf) : [overviewRegion()]);
+  const srcOf = o => o.asset && doc.assets[o.asset] ? `src="${esc(doc.assets[o.asset])}"` : (o.src ? `src="${esc(o.src)}"` : '');
+  const pages = regions.map(r => {
+    const k = Math.min(W / r.w, H / r.h), d = doc.perspective / k, reach = Math.hypot(r.w, r.h) / 2;
+    /* 이 슬라이드 근처 객체만 (발표 시작 때 숨겨지는 객체는 제외) */
+    const objs = doc.objects.filter(o => !o.fxHidden && Math.hypot(o.x - r.x, o.y - r.y) < reach + Math.hypot(o.w, o.h) * o.s / 2);
+    return `<section class="page"><div class="pw" style="transform:translate(${W / 2}px,${H / 2}px) scale(${k}) perspective(${d}px) rotateZ(${-(r.r || 0)}deg) rotateY(${-(r.ry || 0)}deg) rotateX(${-(r.rx || 0)}deg) translate3d(${-r.x}px,${-r.y}px,${-(r.z || 0)}px)">${objs.map(o => objHTML(o, 'print', srcOf)).join('')}</div></section>`;
+  }).join('\n');
+  return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${esc(doc.title)}</title>
+<style>:root{${themeVars()}}${OBJ_CSS}
+@page{size:${W}px ${H}px;margin:0}
+html,body{margin:0;padding:0;background:var(--c-bg)}
+*{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.page{position:relative;width:${W}px;height:${H}px;overflow:hidden;background:var(--c-bg);break-after:page;page-break-after:always}
+.page:last-child{break-after:auto;page-break-after:auto}
+.pw{position:absolute;left:0;top:0;transform-origin:0 0;transform-style:preserve-3d}
+</style></head><body>${pages}</body></html>`;
+}
+async function exportPDF() {
+  if (editing) endEdit();
+  const n = doc.path.length || 1;
+  toast(`슬라이드 ${n}장을 PDF로 준비하는 중… 인쇄 창에서 'PDF로 저장'을 고르세요`);
+  const f = document.createElement('iframe');
+  f.style.cssText = `position:fixed;left:-${doc.W + 100}px;top:0;width:${doc.W}px;height:${doc.H}px;border:0`;
+  document.body.appendChild(f);
+  await new Promise(res => { f.onload = res; f.srcdoc = buildPrintHTML(); });
+  const d = f.contentDocument;
+  /* 이미지·글꼴이 다 그려진 뒤 인쇄 (안 그러면 빈 칸이 찍힘) */
+  await Promise.all([...d.images].map(img => img.decode ? img.decode().catch(() => {}) : null));
+  if (d.fonts && d.fonts.ready) await d.fonts.ready;
+  const prevTitle = document.title;
+  document.title = safeName();   // 크롬은 '저장' 파일 이름에 제목을 씁니다
+  f.contentWindow.focus();
+  f.contentWindow.print();
+  document.title = prevTitle;
+  setTimeout(() => f.remove(), 1000);
+}
+
 function download(name, blob) {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);

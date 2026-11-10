@@ -400,6 +400,7 @@ const ACT = {
   tblRow: d => tableResize(+d, 0), tblCol: d => tableResize(0, +d),
   chart: k => addChart(k || 'bar'),
   model: () => $('#file-model').click(),
+  exportPDF: () => exportPDF(),
   modelPreview: openModelPreview,
   /* 부품 보이기/숨기기·모두 초기화 */
   partVis(i) { const o = selObjs().find(x => x.type === 'model'); if (!o) return; const p = o.parts[i] || {}; o.parts = { ...o.parts, [i]: { ...p, h: !p.h } }; commit(); renderProps(); },
@@ -532,7 +533,7 @@ document.addEventListener('click', e => {
 
 /* ── 메뉴 막대: 항목은 모두 ACT 명령을 부릅니다 [이름, 명령, 인자, 단축키] ── */
 const MENUS = [
-  ['파일', [['새 캔버스', 'newDoc'], ['열기…', 'open', '', '⌘O'], '-', ['JSON 저장', 'saveJSON', '', '⌘S'], ['HTML 내보내기', 'exportHTML', '', '⇧⌘E'], '-',
+  ['파일', [['새 캔버스', 'newDoc'], ['열기…', 'open', '', '⌘O'], '-', ['JSON 저장', 'saveJSON', '', '⌘S'], ['HTML 내보내기', 'exportHTML', '', '⇧⌘E'], ['PDF로 내보내기 (슬라이드별)', 'exportPDF'], '-',
     ['지금 화면을 overview로 지정', 'setOverview'], ['overview 자동으로 되돌리기', 'clearOverview']]],
   ['편집', [['실행 취소', 'undo', '', '⌘Z'], ['다시 실행', 'redo', '', '⇧⌘Z'], '-', ['복사', 'copy', '', '⌘C'], ['붙여넣기', 'paste', '', '⌘V'], ['복제', 'dup', '', '⌘D'], ['삭제', 'del', '', 'Delete'], '-',
     ['모두 선택', 'selectAll', '', '⌘A'], ['선택 해제', 'deselect', '', 'Esc']]],
@@ -541,7 +542,7 @@ const MENUS = [
     ['이미지 파일…', 'image'], ['이미지 주소…', 'imageURL'], ['영상 주소…', 'videoURL'], ['영상 파일…', 'videoFile']]],
   ['슬라이드', [['처음부터 발표', 'runStart'], ['현재 슬라이드부터 발표', 'run', '', '⌘↵'], '-', ['새 슬라이드', 'newSlide'], ['현재 슬라이드 복제', 'dupSlide'], ['현재 슬라이드 삭제', 'delSlide'], '-',
     ['이전 슬라이드', 'prevSlide', '', 'PageUp'], ['다음 슬라이드', 'nextSlide', '', 'PageDown'], ['앞으로 옮기기', 'moveSlide', '-1'], ['뒤로 옮기기', 'moveSlide', '1'], '-',
-    ['슬라이드 이름 바꾸기…', 'renameSlide'], ['경로 잇기 모드', 'path'], ['지금 화면을 경로에 추가', 'addView']]],
+    ['슬라이드 이름 바꾸기…', 'renameSlide'], ['경로 잇기 모드', 'path'], ['지금 화면을 경로에 추가', 'addView'], '-', ['슬라이드를 PDF로 내보내기', 'exportPDF']]],
   ['레이어', [['맨 앞으로', 'front', '', '⇧⌘]'], ['앞으로', 'forward', '', '⌘]'], ['뒤로', 'backward', '', '⌘['], ['맨 뒤로', 'back', '', '⇧⌘['], '-',
     ['잠금 전환', 'toggleLock', '', '⇧⌘L'], ['표시 전환', 'toggleHide', '', '⇧⌘H'], ['이름 바꾸기…', 'renameObj'], '-', ['레이어 패널', 'leftTab', 'layers']]],
   ['보기', [['확대', 'zoomIn', '', '⌘='], ['축소', 'zoomOut', '', '⌘−'], ['전체 보기', 'fit', '', '⇧1'], ['선택 객체로 이동', 'view', '', '⇧2'], ['화면 회전 풀기', 'resetRot'], '-',

@@ -30,6 +30,7 @@
 - Presenter notes, slide navigator, and progress indicator
 - Autosave, undo/redo, and JSON import/export
 - Standalone HTML export with embedded local assets
+- PDF export, one page per slide (vector text; 3D models as snapshots)
 - Menu bar (File, Edit, Insert, Slide, Layer, View, Help) and a shortcut sheet (`?`)
 - 16:9 slides (add, duplicate, delete, reorder) and a layer panel (stacking order, lock, hide)
 - 24 shapes (polygons, stars, donuts, arrows, callouts, flowchart) with text inside
