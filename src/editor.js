@@ -409,6 +409,7 @@ const ACT = {
   },
   embedMode(m) { selObjs().filter(x => x.type === 'embed').forEach(o => { o.mode = m; renderObj(o); }); commit(); renderProps(); },
   embedPreview: () => openEmbedPreview(),
+  aiDeck() { $('#ai-append').disabled = !doc.path.length; $('#adlg').showModal(); $('#ai-topic').focus(); },
   deckDialog() {
     $('#deck-list').innerHTML = Object.entries(DECKS).map(([k, T]) => `<div class="deck">${deckPreviewSVG(k)}<b>${esc(T.name)}</b><span class="note">${esc(T.desc)}</span>
       <div class="grid2"><button class="tb primary" data-deck="new" data-k="${k}">새 문서로</button><button class="tb" data-deck="append" data-k="${k}"${doc.path.length ? '' : ' disabled'}>지금 문서에 이어 붙이기</button></div></div>`).join('');
@@ -546,7 +547,7 @@ document.addEventListener('click', e => {
 
 /* ── 메뉴 막대: 항목은 모두 ACT 명령을 부릅니다 [이름, 명령, 인자, 단축키] ── */
 const MENUS = [
-  ['파일', [['새 캔버스', 'newDoc'], ['템플릿으로 새 덱…', 'deckDialog'], ['열기…', 'open', '', '⌘O'], '-', ['JSON 저장', 'saveJSON', '', '⌘S'], ['HTML 내보내기', 'exportHTML', '', '⇧⌘E'], ['PDF로 내보내기 (슬라이드별)', 'exportPDF'], '-',
+  ['파일', [['새 캔버스', 'newDoc'], ['템플릿으로 새 덱…', 'deckDialog'], ['AI로 덱 만들기…', 'aiDeck'], ['열기…', 'open', '', '⌘O'], '-', ['JSON 저장', 'saveJSON', '', '⌘S'], ['HTML 내보내기', 'exportHTML', '', '⇧⌘E'], ['PDF로 내보내기 (슬라이드별)', 'exportPDF'], '-',
     ['지금 화면을 overview로 지정', 'setOverview'], ['overview 자동으로 되돌리기', 'clearOverview']]],
   ['편집', [['실행 취소', 'undo', '', '⌘Z'], ['다시 실행', 'redo', '', '⇧⌘Z'], '-', ['복사', 'copy', '', '⌘C'], ['붙여넣기', 'paste', '', '⌘V'], ['복제', 'dup', '', '⌘D'], ['삭제', 'del', '', 'Delete'], '-',
     ['모두 선택', 'selectAll', '', '⌘A'], ['선택 해제', 'deselect', '', 'Esc']]],
@@ -554,7 +555,7 @@ const MENUS = [
     ['도형…', 'shapeMenu'], ['사각형', 'shape', 'rect'], ['원', 'shape', 'ellipse'], ['화살표', 'shape', 'arrow'], ['선', 'shape', 'line'], '-', ['표', 'table'], ['막대 차트', 'chart', 'bar'], ['꺾은선 차트', 'chart', 'line'], ['원 차트', 'chart', 'pie'], '-', ['3D 모델… (GLB·STL·OBJ·STEP·IGES)', 'model'], ['웹 임베드: HTML 파일…', 'embedFile'], ['웹 임베드: 웹 주소…', 'embedURL'], '-', ['연결선 잇기', 'connect'], ['펜으로 그리기', 'pen'], '-',
     ['이미지 파일…', 'image'], ['이미지 주소…', 'imageURL'], ['영상 주소…', 'videoURL'], ['영상 파일…', 'videoFile']]],
   ['슬라이드', [['처음부터 발표', 'runStart'], ['현재 슬라이드부터 발표', 'run', '', '⌘↵'], '-', ['새 슬라이드', 'newSlide'],
-    ...Object.entries(LAYOUTS).map(([k, L]) => ['  └ ' + L.name, 'newSlide', k]), ['템플릿으로 새 덱…', 'deckDialog'], '-', ['현재 슬라이드 복제', 'dupSlide'], ['현재 슬라이드 삭제', 'delSlide'], '-',
+    ...Object.entries(LAYOUTS).map(([k, L]) => ['  └ ' + L.name, 'newSlide', k]), ['템플릿으로 새 덱…', 'deckDialog'], ['AI로 덱 만들기…', 'aiDeck'], '-', ['현재 슬라이드 복제', 'dupSlide'], ['현재 슬라이드 삭제', 'delSlide'], '-',
     ['이전 슬라이드', 'prevSlide', '', 'PageUp'], ['다음 슬라이드', 'nextSlide', '', 'PageDown'], ['앞으로 옮기기', 'moveSlide', '-1'], ['뒤로 옮기기', 'moveSlide', '1'], '-',
     ['슬라이드 이름 바꾸기…', 'renameSlide'], ['경로 잇기 모드', 'path'], ['지금 화면을 경로에 추가', 'addView'], '-', ['슬라이드를 PDF로 내보내기', 'exportPDF']]],
   ['레이어', [['맨 앞으로', 'front', '', '⇧⌘]'], ['앞으로', 'forward', '', '⌘]'], ['뒤로', 'backward', '', '⌘['], ['맨 뒤로', 'back', '', '⇧⌘['], '-',
@@ -991,6 +992,40 @@ $('#file-html').addEventListener('change', async e => {
 });
 $('#embed-pop').insertAdjacentHTML('beforeend', '<h5 class="ph">예제 (p5.js)</h5>' + Object.entries(EMBED_EXAMPLES).map(([k, t]) => `<button data-act="embedExample" data-arg="${k}">${esc(t.name)}</button>`).join(''));
 $('#edlg').addEventListener('click', e => { if (e.target.closest('[data-emb=close]')) closeEmbedPreview(); });
+/* ── AI 덱 창 ── */
+$('#ai-deck').innerHTML = Object.entries(DECKS).map(([k, T]) => `<option value="${k}">${esc(T.name)}</option>`).join('');
+$('#ai-copy').addEventListener('click', async () => {
+  const topic = $('#ai-topic').value.trim();
+  if (!topic) { $('#ai-status').textContent = '먼저 발표 주제를 적어 주세요'; $('#ai-topic').focus(); return; }
+  const n = Math.min(30, Math.max(3, +$('#ai-n').value || 8));
+  const p = aiPrompt(topic, n, $('#ai-extra').value.trim());
+  try { await navigator.clipboard.writeText(p); $('#ai-status').textContent = '프롬프트를 복사했습니다. AI에 붙여넣고, 받은 답을 위 칸에 붙여넣으세요.'; }
+  catch (e) {   // 클립보드 권한이 없으면 답 칸에 띄워 직접 복사하게
+    $('#ai-answer').value = p; $('#ai-answer').select();
+    $('#ai-status').textContent = '자동 복사가 막혔습니다. 칸에 띄운 프롬프트를 ⌘C로 복사한 뒤 지우고 답을 붙여넣으세요.';
+  }
+});
+async function aiBuild(replace) {
+  let parsed;
+  try { parsed = parseOutline($('#ai-answer').value); }
+  catch (err) { $('#ai-status').textContent = '⚠ ' + err.message; return; }
+  const key = $('#ai-deck').value;
+  if (replace && doc.objects.length) {
+    $('#adlg').close();
+    const ok = await ask({ title: 'AI 덱 만들기', msg: `지금 캔버스를 비우고 슬라이드 ${parsed.outline.length}장으로 새로 만듭니다. 지금 작업이 필요하면 먼저 JSON으로 저장하세요.`, ok: '새로 만들기' });
+    if (!ok) { $('#adlg').showModal(); return; }
+  } else $('#adlg').close();
+  buildDeck(key, parsed.outline, { replace, title: parsed.title });
+}
+$('#ai-build').addEventListener('click', () => aiBuild(true));
+$('#ai-append').addEventListener('click', () => aiBuild(false));
+$('#ai-close').addEventListener('click', () => $('#adlg').close());
+$('#ai-answer').addEventListener('input', () => {
+  const v = $('#ai-answer').value.trim();
+  if (!v) { $('#ai-status').textContent = ''; return; }
+  try { const p = parseOutline(v); $('#ai-status').textContent = `✓ 슬라이드 ${p.outline.length}장: ${p.outline.map(c => LAYOUTS[c.layout].name).join(' · ')}`; }
+  catch (err) { $('#ai-status').textContent = '⚠ ' + err.message; }
+});
 /* 레이아웃 고르기 (새 슬라이드 ▾) */
 $('#layout-pop').innerHTML = Object.entries(LAYOUTS).map(([k, L]) => `<button data-act="newSlide" data-arg="${k}">${layoutIcon(k)}<span>${esc(L.name)}</span></button>`).join('');
 /* 템플릿 창: 새 문서로 만들기 전에는 지금 문서가 사라진다고 확인 */

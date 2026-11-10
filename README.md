@@ -34,6 +34,7 @@
 - Menu bar (File, Edit, Insert, Slide, Layer, View, Help) and a shortcut sheet (`?`)
 - 16:9 slides (add, duplicate, delete, reorder) and a layer panel (stacking order, lock, hide)
 - 7 slide layouts (cover, section, bullets, two columns, image + text, closing, blank) and 5 deck templates combining theme, frame style, and canvas arrangement (row, grid, radial zoom, 3D stairs)
+- AI deck builder — describe a topic, copy the prompt into any AI chat, paste back the JSON outline, and get slides with speaker notes built from a template (no server or API key)
 - 24 shapes (polygons, stars, donuts, arrows, callouts, flowchart) with text inside
 - Tables with in-place cell editing, Tab navigation, and row/column controls
 - 8 SVG chart types — paste ranges from Excel, automatic thinning of large data, entrance animation
@@ -44,7 +45,7 @@
 
 ## Privacy and portability
 
-Presentation data is stored in the browser and is not uploaded by this project. Clearing browser data also clears the autosaved document, so export important work as JSON.
+Presentation data is stored in the browser and is not uploaded by this project. Using 3D models (three.js, CAD converter) or the p5.js examples downloads those libraries from the jsDelivr CDN (no document content is sent). Clearing browser data also clears the autosaved document, so export important work as JSON.
 
 Exported presentations include the required impress.js MIT notice. Local assets are embedded in the exported file. YouTube playback and thumbnails still require an internet connection.
 

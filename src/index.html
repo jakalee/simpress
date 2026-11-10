@@ -92,7 +92,7 @@
     <div class="pane-b">
       <div class="addslide"><button class="wide" data-act="newSlide" title="마지막에 쓴 레이아웃으로 추가">＋ 새 슬라이드</button>
         <details class="dd up" id="dd-layout"><summary class="wide" title="레이아웃 고르기">▾</summary><div class="pop layouts" id="layout-pop"></div></details></div>
-      <button class="wide" data-act="deckDialog">템플릿으로 새 덱…</button>
+      <div class="grid2"><button class="wide" data-act="deckDialog">템플릿…</button><button class="wide" data-act="aiDeck">AI로 만들기…</button></div>
       <button class="wide addview" data-act="addView">＋ 현재 화면을 경로에 추가</button>
     </div>
   </div>
@@ -160,6 +160,27 @@
   <div class="mv-head"><b>템플릿으로 새 덱</b><span class="note">테마 · 프레임 · 캔버스 배치가 묶인 6장짜리 기본 덱을 만듭니다</span></div>
   <div id="deck-list"></div>
   <div class="dlg-b"><button class="tb" data-deck="close">닫기</button></div>
+</dialog>
+<dialog id="adlg">
+  <div class="mv-head"><b>AI로 슬라이드 덱 만들기</b><span class="note">서버·API 키 없이: 프롬프트 복사 → AI에 붙여넣기 → 답을 다시 붙여넣기</span></div>
+  <div class="ai-grid">
+    <section>
+      <h4>1. 무엇에 대한 발표인가요?</h4>
+      <textarea id="ai-topic" rows="3" placeholder="예: 영구자석 동기모터의 효율을 높이는 설계 방법 — 사내 기술 세미나, 20분"></textarea>
+      <div class="ai-row"><label>장 수 <input id="ai-n" type="number" min="3" max="30" value="8"></label>
+        <label>템플릿 <select id="ai-deck"></select></label></div>
+      <input id="ai-extra" placeholder="추가 요청 (선택): 청중 수준, 꼭 넣을 내용 등">
+      <button class="tb primary wide" id="ai-copy">2. 프롬프트 복사</button>
+      <p class="note">Claude·ChatGPT 등 아무 AI 채팅에 붙여넣으세요.</p>
+    </section>
+    <section>
+      <h4>3. AI의 답(JSON)을 붙여넣기</h4>
+      <textarea id="ai-answer" rows="10" class="mono" placeholder='{"title": "...", "slides": [ ... ]}'></textarea>
+      <p class="note" id="ai-status"></p>
+      <div class="grid2"><button class="tb primary" id="ai-build" data-mode="new">새 문서로 만들기</button><button class="tb" id="ai-append">지금 문서에 이어 붙이기</button></div>
+    </section>
+  </div>
+  <div class="dlg-b"><button class="tb" id="ai-close">닫기</button></div>
 </dialog>
 <dialog id="edlg">
   <div class="mv-head"><b>웹 임베드 미리보기</b><span class="note">발표 화면과 같은 격리(sandbox) 상태로 실행합니다</span></div>

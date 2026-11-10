@@ -13,6 +13,8 @@ const LAYOUTS = {
 };
 /* 레이아웃 글자 크기는 발표용 기준 (1080p에서 본문 약 48px) — 편집 중 직접 쓰는 글(TEXT_STYLES)과 따로 둠 */
 const LAYOUT_FS = { cover: 120, section: 110, title: 76, body: 48, sub: 48, kicker: 44 };
+/* 긴 제목은 글자 수에 따라 조금 줄임 (n자까지는 기본 크기, 그 뒤로 완만하게, 최소 70%) */
+const fit = (text, fs, n) => { const len = String(text || '').length; return len <= n ? fs : Math.round(fs * Math.max(.7, Math.sqrt(n / len))); };
 const bulletsHTML = list => '<ul>' + (list || []).filter(Boolean).map(b => `<li>${esc(b)}</li>`).join('') + '</ul>';
 
 /* 슬라이드 로컬 좌표(가운데 0,0 · 단위 px) → 월드. 회전·기울기·배율을 슬라이드에서 그대로 물려받음 */
@@ -33,17 +35,18 @@ function applyLayout(f, key, c = {}) {
   const H = doc.H, W = doc.W, made = [];
   const T = (html, o) => html ? made.push(slideText(f, html, o)) : null;
   const shape = (u, v, w, h, props) => made.push(slidePut(f, u * W - W / 2, v * H - H / 2, { type: 'shape', w: w * W, h: h * H, ...props }));
-  const head = (t) => T(esc(t || '제목'), { u: .08, v: .16, w: .84, style: 'title', fs: LAYOUT_FS.title });
+  const head = (t) => T(esc(t || '제목'), { u: .08, v: .16, w: .84, style: 'title', fs: fit(t, LAYOUT_FS.title, 26) });
   switch (key) {
     case 'title':
-      T(esc(c.title || '발표 제목'), { u: .5, v: .42, style: 'title', fs: LAYOUT_FS.cover, align: 'center' });
-      shape(.5, .55, .12, .012, { shape: 'rect', p: { r: .5 } });
-      T(esc(c.sub || '부제목 · 발표자 · 날짜'), { u: .5, v: .64, style: 'sub', fs: LAYOUT_FS.sub, fw: 500, align: 'center' });
+      /* 가운데 제목도 폭을 정해 두어 길면 줄바꿈 (슬라이드 밖으로 넘치지 않게) */
+      T(esc(c.title || '발표 제목'), { u: .5, v: .4, w: .84, style: 'title', fs: fit(c.title, LAYOUT_FS.cover, 14), align: 'center' });
+      shape(.5, .56, .12, .012, { shape: 'rect', p: { r: .5 } });
+      T(esc(c.sub || '부제목 · 발표자 · 날짜'), { u: .5, v: .65, w: .8, style: 'sub', fs: LAYOUT_FS.sub, fw: 500, align: 'center' });
       break;
     case 'section':
       shape(.09, .5, .012, .3, { shape: 'rect', p: { r: .5 } });
       T(esc(c.kicker || '01'), { u: .14, v: .38, w: .5, style: 'sub', fs: LAYOUT_FS.kicker });
-      T(esc(c.title || '섹션 제목'), { u: .14, v: .52, w: .76, style: 'title', fs: LAYOUT_FS.section });
+      T(esc(c.title || '섹션 제목'), { u: .14, v: .52, w: .76, style: 'title', fs: fit(c.title, LAYOUT_FS.section, 16) });
       break;
     case 'bullets':
       head(c.title);
@@ -62,8 +65,8 @@ function applyLayout(f, key, c = {}) {
       T(bulletsHTML(c.bullets || ['설명 1', '설명 2']), { u: .54, v: .56, w: .38, fs: LAYOUT_FS.body });
       break;
     case 'closing':
-      T(esc(c.title || '감사합니다'), { u: .5, v: .45, style: 'title', fs: LAYOUT_FS.cover, align: 'center' });
-      T(esc(c.sub || '질문과 토론'), { u: .5, v: .6, style: 'sub', fs: LAYOUT_FS.sub, fw: 500, align: 'center' });
+      T(esc(c.title || '감사합니다'), { u: .5, v: .45, w: .84, style: 'title', fs: fit(c.title, LAYOUT_FS.cover, 14), align: 'center' });
+      T(esc(c.sub || '질문과 토론'), { u: .5, v: .6, w: .8, style: 'sub', fs: LAYOUT_FS.sub, fw: 500, align: 'center' });
       break;
   }
   if (c.notes) f.notes = String(c.notes);
@@ -98,7 +101,11 @@ function arrangeSlides(kind, n) {
       if (i === 0) { out.push({ x: 0, y: 0, s: 1.25 }); continue; }
       const a = -Math.PI / 2 + (i - 1) / Math.max(1, n - 1) * Math.PI * 2, R = W * 1.55;
       out.push({ x: Math.cos(a) * R, y: Math.sin(a) * R * .8, s: .62 });
-    } else if (kind === 'stairs') out.push({ x: i * W * .95, y: i * H * .28, z: -i * W * .55, ry: -28, s: 1 });
+    } else if (kind === 'stairs') {
+      /* 기울어진 슬라이드 자신의 좌표계에서 옆으로 한 칸 + 뒤로 물러나게 → 서로 겹치지 않음 */
+      const v = mulV(euler(0, -28, 0), [i * W * 1.2, i * H * .3, -i * W * .35]);
+      out.push({ x: v[0], y: v[1], z: v[2], ry: -28, s: 1 });
+    }
     else out.push({ x: i * W * 1.15, y: 0, s: 1 });
   }
   return out;
@@ -129,6 +136,52 @@ function buildDeck(key, outline, opts = {}) {
   activeStep = 0;
   renderAll(); commit(); renderPathList(); fitAll(600);
   toast(`'${T.name}' 템플릿으로 슬라이드 ${outline.length}장을 만들었습니다`);
+}
+
+/* ── AI 덱 만들기: 프롬프트를 복사해 아무 AI에 붙여넣고, 돌아온 JSON 개요로 덱을 만듦 (서버·API 키 없음) ── */
+function aiPrompt(topic, n, extra) {
+  return `다음 주제로 발표 슬라이드 개요를 만들어 주세요. 답은 JSON 하나만 주세요 (설명 문장이나 코드 블록 표시 없이).
+
+주제: ${topic}
+슬라이드 수: ${n}장 (첫 장은 표지, 마지막 장은 마무리 포함)${extra ? `\n추가 요청: ${extra}` : ''}
+
+형식:
+{"title": "발표 제목", "slides": [
+  {"layout": "title", "title": "...", "sub": "...", "notes": "..."},
+  ...
+]}
+
+layout 종류와 채울 칸:
+- "title": title, sub (부제목·발표자·날짜 등)
+- "section": kicker (예: "01"), title
+- "bullets": title, bullets (문자열 3~5개)
+- "two": title, left {"head": "...", "bullets": [...]}, right {"head": "...", "bullets": [...]}
+- "imageText": title, bullets (이미지는 나중에 직접 넣습니다)
+- "closing": title, sub
+
+규칙:
+- 모든 슬라이드에 notes(발표자 노트, 2~3문장)를 넣으세요.
+- 글머리표 한 줄은 40자 이내로, 문장보다 핵심어 위주로.
+- 첫 장은 "title", 마지막 장은 "closing".
+- 섹션 구분(section)은 내용이 길 때만 1~2번.`;
+}
+/* AI 답에서 JSON을 꺼내 검증·정리 (코드 블록 표시·앞뒤 설명이 붙어 와도 됨) */
+function parseOutline(text) {
+  let t = String(text || '').trim().replace(/^```[a-z]*\s*/i, '').replace(/```\s*$/, '');
+  const a = t.indexOf('{'), b = t.lastIndexOf('}'), a2 = t.indexOf('['), b2 = t.lastIndexOf(']');
+  let data;
+  try { data = JSON.parse(a >= 0 && b > a && (a2 < 0 || a < a2) ? t.slice(a, b + 1) : t.slice(a2, b2 + 1)); }
+  catch (e) { throw new Error('JSON으로 읽을 수 없습니다. AI 답 전체를 그대로 붙여넣었는지 확인하세요'); }
+  const slides = Array.isArray(data) ? data : data.slides;
+  if (!Array.isArray(slides) || !slides.length) throw new Error('"slides" 목록이 없습니다');
+  const S = (v, n = 160) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
+  const L = v => (Array.isArray(v) ? v : []).map(x => S(x)).filter(Boolean).slice(0, 8);
+  const col = v => v && typeof v === 'object' ? { head: S(v.head, 60), bullets: L(v.bullets) } : { head: '', bullets: [] };
+  const outline = slides.slice(0, 40).map(s => {
+    const layout = LAYOUTS[s && s.layout] && s.layout !== 'blank' ? s.layout : (s && Array.isArray(s.bullets) ? 'bullets' : 'section');
+    return { layout, title: S(s.title, 120), sub: S(s.sub, 160), kicker: S(s.kicker, 20), bullets: L(s.bullets), left: col(s.left), right: col(s.right), notes: S(s.notes, 1200) };
+  });
+  return { title: S(data.title, 120) || outline[0].title, outline };
 }
 
 /* ── 미리보기 그림 (SVG) ── */

@@ -90,6 +90,17 @@ textarea.code::placeholder{font-family:inherit;color:#a2a9b3;font-style:italic}
 .deck{display:flex;flex-direction:column;gap:6px;padding:8px;border:1px solid var(--line);border-radius:12px}
 .deck svg{width:100%;height:auto;border-radius:8px}
 .deck .grid2 .tb{justify-content:center;font-size:12px;padding:6px 4px}
+#adlg{border:0;border-radius:14px;padding:16px;box-shadow:0 18px 50px rgba(20,30,50,.3);width:860px;max-width:calc(100vw - 32px)}
+#adlg::backdrop{background:rgba(20,28,40,.45)}
+.ai-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.ai-grid section{display:flex;flex-direction:column;gap:8px}
+.ai-grid h4{margin:0}
+.ai-grid textarea,.ai-grid input:not([type=number]),.ai-grid select{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:8px;padding:8px;font:inherit;font-size:12.5px}
+.ai-row{display:flex;gap:12px;align-items:center;font-size:12.5px}
+.ai-row input[type=number]{width:60px;border:1px solid var(--line);border-radius:6px;padding:5px}
+#ai-status{min-height:1.4em}
+.pane-b .grid2{margin-top:6px;gap:6px}.pane-b .grid2 .wide{margin:0}
+@media (max-width:760px){.ai-grid{grid-template-columns:1fr}}
 #edlg{border:0;border-radius:14px;padding:16px;box-shadow:0 18px 50px rgba(20,30,50,.3);max-width:calc(100vw - 32px)}
 #edlg::backdrop{background:rgba(20,28,40,.45)}
 #emb-host{border-radius:10px;overflow:hidden;background:#fff;box-shadow:inset 0 0 0 1px var(--line)}
@@ -335,7 +346,7 @@ textarea{width:100%;resize:vertical;font-size:12.5px}
     <div class="pane-b">
       <div class="addslide"><button class="wide" data-act="newSlide" title="마지막에 쓴 레이아웃으로 추가">＋ 새 슬라이드</button>
         <details class="dd up" id="dd-layout"><summary class="wide" title="레이아웃 고르기">▾</summary><div class="pop layouts" id="layout-pop"></div></details></div>
-      <button class="wide" data-act="deckDialog">템플릿으로 새 덱…</button>
+      <div class="grid2"><button class="wide" data-act="deckDialog">템플릿…</button><button class="wide" data-act="aiDeck">AI로 만들기…</button></div>
       <button class="wide addview" data-act="addView">＋ 현재 화면을 경로에 추가</button>
     </div>
   </div>
@@ -403,6 +414,27 @@ textarea{width:100%;resize:vertical;font-size:12.5px}
   <div class="mv-head"><b>템플릿으로 새 덱</b><span class="note">테마 · 프레임 · 캔버스 배치가 묶인 6장짜리 기본 덱을 만듭니다</span></div>
   <div id="deck-list"></div>
   <div class="dlg-b"><button class="tb" data-deck="close">닫기</button></div>
+</dialog>
+<dialog id="adlg">
+  <div class="mv-head"><b>AI로 슬라이드 덱 만들기</b><span class="note">서버·API 키 없이: 프롬프트 복사 → AI에 붙여넣기 → 답을 다시 붙여넣기</span></div>
+  <div class="ai-grid">
+    <section>
+      <h4>1. 무엇에 대한 발표인가요?</h4>
+      <textarea id="ai-topic" rows="3" placeholder="예: 영구자석 동기모터의 효율을 높이는 설계 방법 — 사내 기술 세미나, 20분"></textarea>
+      <div class="ai-row"><label>장 수 <input id="ai-n" type="number" min="3" max="30" value="8"></label>
+        <label>템플릿 <select id="ai-deck"></select></label></div>
+      <input id="ai-extra" placeholder="추가 요청 (선택): 청중 수준, 꼭 넣을 내용 등">
+      <button class="tb primary wide" id="ai-copy">2. 프롬프트 복사</button>
+      <p class="note">Claude·ChatGPT 등 아무 AI 채팅에 붙여넣으세요.</p>
+    </section>
+    <section>
+      <h4>3. AI의 답(JSON)을 붙여넣기</h4>
+      <textarea id="ai-answer" rows="10" class="mono" placeholder='{"title": "...", "slides": [ ... ]}'></textarea>
+      <p class="note" id="ai-status"></p>
+      <div class="grid2"><button class="tb primary" id="ai-build" data-mode="new">새 문서로 만들기</button><button class="tb" id="ai-append">지금 문서에 이어 붙이기</button></div>
+    </section>
+  </div>
+  <div class="dlg-b"><button class="tb" id="ai-close">닫기</button></div>
 </dialog>
 <dialog id="edlg">
   <div class="mv-head"><b>웹 임베드 미리보기</b><span class="note">발표 화면과 같은 격리(sandbox) 상태로 실행합니다</span></div>
@@ -6496,6 +6528,8 @@ const LAYOUTS = {
 };
 /* 레이아웃 글자 크기는 발표용 기준 (1080p에서 본문 약 48px) — 편집 중 직접 쓰는 글(TEXT_STYLES)과 따로 둠 */
 const LAYOUT_FS = { cover: 120, section: 110, title: 76, body: 48, sub: 48, kicker: 44 };
+/* 긴 제목은 글자 수에 따라 조금 줄임 (n자까지는 기본 크기, 그 뒤로 완만하게, 최소 70%) */
+const fit = (text, fs, n) => { const len = String(text || '').length; return len <= n ? fs : Math.round(fs * Math.max(.7, Math.sqrt(n / len))); };
 const bulletsHTML = list => '<ul>' + (list || []).filter(Boolean).map(b => `<li>${esc(b)}</li>`).join('') + '</ul>';
 
 /* 슬라이드 로컬 좌표(가운데 0,0 · 단위 px) → 월드. 회전·기울기·배율을 슬라이드에서 그대로 물려받음 */
@@ -6516,17 +6550,18 @@ function applyLayout(f, key, c = {}) {
   const H = doc.H, W = doc.W, made = [];
   const T = (html, o) => html ? made.push(slideText(f, html, o)) : null;
   const shape = (u, v, w, h, props) => made.push(slidePut(f, u * W - W / 2, v * H - H / 2, { type: 'shape', w: w * W, h: h * H, ...props }));
-  const head = (t) => T(esc(t || '제목'), { u: .08, v: .16, w: .84, style: 'title', fs: LAYOUT_FS.title });
+  const head = (t) => T(esc(t || '제목'), { u: .08, v: .16, w: .84, style: 'title', fs: fit(t, LAYOUT_FS.title, 26) });
   switch (key) {
     case 'title':
-      T(esc(c.title || '발표 제목'), { u: .5, v: .42, style: 'title', fs: LAYOUT_FS.cover, align: 'center' });
-      shape(.5, .55, .12, .012, { shape: 'rect', p: { r: .5 } });
-      T(esc(c.sub || '부제목 · 발표자 · 날짜'), { u: .5, v: .64, style: 'sub', fs: LAYOUT_FS.sub, fw: 500, align: 'center' });
+      /* 가운데 제목도 폭을 정해 두어 길면 줄바꿈 (슬라이드 밖으로 넘치지 않게) */
+      T(esc(c.title || '발표 제목'), { u: .5, v: .4, w: .84, style: 'title', fs: fit(c.title, LAYOUT_FS.cover, 14), align: 'center' });
+      shape(.5, .56, .12, .012, { shape: 'rect', p: { r: .5 } });
+      T(esc(c.sub || '부제목 · 발표자 · 날짜'), { u: .5, v: .65, w: .8, style: 'sub', fs: LAYOUT_FS.sub, fw: 500, align: 'center' });
       break;
     case 'section':
       shape(.09, .5, .012, .3, { shape: 'rect', p: { r: .5 } });
       T(esc(c.kicker || '01'), { u: .14, v: .38, w: .5, style: 'sub', fs: LAYOUT_FS.kicker });
-      T(esc(c.title || '섹션 제목'), { u: .14, v: .52, w: .76, style: 'title', fs: LAYOUT_FS.section });
+      T(esc(c.title || '섹션 제목'), { u: .14, v: .52, w: .76, style: 'title', fs: fit(c.title, LAYOUT_FS.section, 16) });
       break;
     case 'bullets':
       head(c.title);
@@ -6545,8 +6580,8 @@ function applyLayout(f, key, c = {}) {
       T(bulletsHTML(c.bullets || ['설명 1', '설명 2']), { u: .54, v: .56, w: .38, fs: LAYOUT_FS.body });
       break;
     case 'closing':
-      T(esc(c.title || '감사합니다'), { u: .5, v: .45, style: 'title', fs: LAYOUT_FS.cover, align: 'center' });
-      T(esc(c.sub || '질문과 토론'), { u: .5, v: .6, style: 'sub', fs: LAYOUT_FS.sub, fw: 500, align: 'center' });
+      T(esc(c.title || '감사합니다'), { u: .5, v: .45, w: .84, style: 'title', fs: fit(c.title, LAYOUT_FS.cover, 14), align: 'center' });
+      T(esc(c.sub || '질문과 토론'), { u: .5, v: .6, w: .8, style: 'sub', fs: LAYOUT_FS.sub, fw: 500, align: 'center' });
       break;
   }
   if (c.notes) f.notes = String(c.notes);
@@ -6581,7 +6616,11 @@ function arrangeSlides(kind, n) {
       if (i === 0) { out.push({ x: 0, y: 0, s: 1.25 }); continue; }
       const a = -Math.PI / 2 + (i - 1) / Math.max(1, n - 1) * Math.PI * 2, R = W * 1.55;
       out.push({ x: Math.cos(a) * R, y: Math.sin(a) * R * .8, s: .62 });
-    } else if (kind === 'stairs') out.push({ x: i * W * .95, y: i * H * .28, z: -i * W * .55, ry: -28, s: 1 });
+    } else if (kind === 'stairs') {
+      /* 기울어진 슬라이드 자신의 좌표계에서 옆으로 한 칸 + 뒤로 물러나게 → 서로 겹치지 않음 */
+      const v = mulV(euler(0, -28, 0), [i * W * 1.2, i * H * .3, -i * W * .35]);
+      out.push({ x: v[0], y: v[1], z: v[2], ry: -28, s: 1 });
+    }
     else out.push({ x: i * W * 1.15, y: 0, s: 1 });
   }
   return out;
@@ -6612,6 +6651,52 @@ function buildDeck(key, outline, opts = {}) {
   activeStep = 0;
   renderAll(); commit(); renderPathList(); fitAll(600);
   toast(`'${T.name}' 템플릿으로 슬라이드 ${outline.length}장을 만들었습니다`);
+}
+
+/* ── AI 덱 만들기: 프롬프트를 복사해 아무 AI에 붙여넣고, 돌아온 JSON 개요로 덱을 만듦 (서버·API 키 없음) ── */
+function aiPrompt(topic, n, extra) {
+  return `다음 주제로 발표 슬라이드 개요를 만들어 주세요. 답은 JSON 하나만 주세요 (설명 문장이나 코드 블록 표시 없이).
+
+주제: ${topic}
+슬라이드 수: ${n}장 (첫 장은 표지, 마지막 장은 마무리 포함)${extra ? `\n추가 요청: ${extra}` : ''}
+
+형식:
+{"title": "발표 제목", "slides": [
+  {"layout": "title", "title": "...", "sub": "...", "notes": "..."},
+  ...
+]}
+
+layout 종류와 채울 칸:
+- "title": title, sub (부제목·발표자·날짜 등)
+- "section": kicker (예: "01"), title
+- "bullets": title, bullets (문자열 3~5개)
+- "two": title, left {"head": "...", "bullets": [...]}, right {"head": "...", "bullets": [...]}
+- "imageText": title, bullets (이미지는 나중에 직접 넣습니다)
+- "closing": title, sub
+
+규칙:
+- 모든 슬라이드에 notes(발표자 노트, 2~3문장)를 넣으세요.
+- 글머리표 한 줄은 40자 이내로, 문장보다 핵심어 위주로.
+- 첫 장은 "title", 마지막 장은 "closing".
+- 섹션 구분(section)은 내용이 길 때만 1~2번.`;
+}
+/* AI 답에서 JSON을 꺼내 검증·정리 (코드 블록 표시·앞뒤 설명이 붙어 와도 됨) */
+function parseOutline(text) {
+  let t = String(text || '').trim().replace(/^```[a-z]*\s*/i, '').replace(/```\s*$/, '');
+  const a = t.indexOf('{'), b = t.lastIndexOf('}'), a2 = t.indexOf('['), b2 = t.lastIndexOf(']');
+  let data;
+  try { data = JSON.parse(a >= 0 && b > a && (a2 < 0 || a < a2) ? t.slice(a, b + 1) : t.slice(a2, b2 + 1)); }
+  catch (e) { throw new Error('JSON으로 읽을 수 없습니다. AI 답 전체를 그대로 붙여넣었는지 확인하세요'); }
+  const slides = Array.isArray(data) ? data : data.slides;
+  if (!Array.isArray(slides) || !slides.length) throw new Error('"slides" 목록이 없습니다');
+  const S = (v, n = 160) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
+  const L = v => (Array.isArray(v) ? v : []).map(x => S(x)).filter(Boolean).slice(0, 8);
+  const col = v => v && typeof v === 'object' ? { head: S(v.head, 60), bullets: L(v.bullets) } : { head: '', bullets: [] };
+  const outline = slides.slice(0, 40).map(s => {
+    const layout = LAYOUTS[s && s.layout] && s.layout !== 'blank' ? s.layout : (s && Array.isArray(s.bullets) ? 'bullets' : 'section');
+    return { layout, title: S(s.title, 120), sub: S(s.sub, 160), kicker: S(s.kicker, 20), bullets: L(s.bullets), left: col(s.left), right: col(s.right), notes: S(s.notes, 1200) };
+  });
+  return { title: S(data.title, 120) || outline[0].title, outline };
 }
 
 /* ── 미리보기 그림 (SVG) ── */
@@ -8117,6 +8202,7 @@ const ACT = {
   },
   embedMode(m) { selObjs().filter(x => x.type === 'embed').forEach(o => { o.mode = m; renderObj(o); }); commit(); renderProps(); },
   embedPreview: () => openEmbedPreview(),
+  aiDeck() { $('#ai-append').disabled = !doc.path.length; $('#adlg').showModal(); $('#ai-topic').focus(); },
   deckDialog() {
     $('#deck-list').innerHTML = Object.entries(DECKS).map(([k, T]) => `<div class="deck">${deckPreviewSVG(k)}<b>${esc(T.name)}</b><span class="note">${esc(T.desc)}</span>
       <div class="grid2"><button class="tb primary" data-deck="new" data-k="${k}">새 문서로</button><button class="tb" data-deck="append" data-k="${k}"${doc.path.length ? '' : ' disabled'}>지금 문서에 이어 붙이기</button></div></div>`).join('');
@@ -8254,7 +8340,7 @@ document.addEventListener('click', e => {
 
 /* ── 메뉴 막대: 항목은 모두 ACT 명령을 부릅니다 [이름, 명령, 인자, 단축키] ── */
 const MENUS = [
-  ['파일', [['새 캔버스', 'newDoc'], ['템플릿으로 새 덱…', 'deckDialog'], ['열기…', 'open', '', '⌘O'], '-', ['JSON 저장', 'saveJSON', '', '⌘S'], ['HTML 내보내기', 'exportHTML', '', '⇧⌘E'], ['PDF로 내보내기 (슬라이드별)', 'exportPDF'], '-',
+  ['파일', [['새 캔버스', 'newDoc'], ['템플릿으로 새 덱…', 'deckDialog'], ['AI로 덱 만들기…', 'aiDeck'], ['열기…', 'open', '', '⌘O'], '-', ['JSON 저장', 'saveJSON', '', '⌘S'], ['HTML 내보내기', 'exportHTML', '', '⇧⌘E'], ['PDF로 내보내기 (슬라이드별)', 'exportPDF'], '-',
     ['지금 화면을 overview로 지정', 'setOverview'], ['overview 자동으로 되돌리기', 'clearOverview']]],
   ['편집', [['실행 취소', 'undo', '', '⌘Z'], ['다시 실행', 'redo', '', '⇧⌘Z'], '-', ['복사', 'copy', '', '⌘C'], ['붙여넣기', 'paste', '', '⌘V'], ['복제', 'dup', '', '⌘D'], ['삭제', 'del', '', 'Delete'], '-',
     ['모두 선택', 'selectAll', '', '⌘A'], ['선택 해제', 'deselect', '', 'Esc']]],
@@ -8262,7 +8348,7 @@ const MENUS = [
     ['도형…', 'shapeMenu'], ['사각형', 'shape', 'rect'], ['원', 'shape', 'ellipse'], ['화살표', 'shape', 'arrow'], ['선', 'shape', 'line'], '-', ['표', 'table'], ['막대 차트', 'chart', 'bar'], ['꺾은선 차트', 'chart', 'line'], ['원 차트', 'chart', 'pie'], '-', ['3D 모델… (GLB·STL·OBJ·STEP·IGES)', 'model'], ['웹 임베드: HTML 파일…', 'embedFile'], ['웹 임베드: 웹 주소…', 'embedURL'], '-', ['연결선 잇기', 'connect'], ['펜으로 그리기', 'pen'], '-',
     ['이미지 파일…', 'image'], ['이미지 주소…', 'imageURL'], ['영상 주소…', 'videoURL'], ['영상 파일…', 'videoFile']]],
   ['슬라이드', [['처음부터 발표', 'runStart'], ['현재 슬라이드부터 발표', 'run', '', '⌘↵'], '-', ['새 슬라이드', 'newSlide'],
-    ...Object.entries(LAYOUTS).map(([k, L]) => ['  └ ' + L.name, 'newSlide', k]), ['템플릿으로 새 덱…', 'deckDialog'], '-', ['현재 슬라이드 복제', 'dupSlide'], ['현재 슬라이드 삭제', 'delSlide'], '-',
+    ...Object.entries(LAYOUTS).map(([k, L]) => ['  └ ' + L.name, 'newSlide', k]), ['템플릿으로 새 덱…', 'deckDialog'], ['AI로 덱 만들기…', 'aiDeck'], '-', ['현재 슬라이드 복제', 'dupSlide'], ['현재 슬라이드 삭제', 'delSlide'], '-',
     ['이전 슬라이드', 'prevSlide', '', 'PageUp'], ['다음 슬라이드', 'nextSlide', '', 'PageDown'], ['앞으로 옮기기', 'moveSlide', '-1'], ['뒤로 옮기기', 'moveSlide', '1'], '-',
     ['슬라이드 이름 바꾸기…', 'renameSlide'], ['경로 잇기 모드', 'path'], ['지금 화면을 경로에 추가', 'addView'], '-', ['슬라이드를 PDF로 내보내기', 'exportPDF']]],
   ['레이어', [['맨 앞으로', 'front', '', '⇧⌘]'], ['앞으로', 'forward', '', '⌘]'], ['뒤로', 'backward', '', '⌘['], ['맨 뒤로', 'back', '', '⇧⌘['], '-',
@@ -8699,6 +8785,40 @@ $('#file-html').addEventListener('change', async e => {
 });
 $('#embed-pop').insertAdjacentHTML('beforeend', '<h5 class="ph">예제 (p5.js)</h5>' + Object.entries(EMBED_EXAMPLES).map(([k, t]) => `<button data-act="embedExample" data-arg="${k}">${esc(t.name)}</button>`).join(''));
 $('#edlg').addEventListener('click', e => { if (e.target.closest('[data-emb=close]')) closeEmbedPreview(); });
+/* ── AI 덱 창 ── */
+$('#ai-deck').innerHTML = Object.entries(DECKS).map(([k, T]) => `<option value="${k}">${esc(T.name)}</option>`).join('');
+$('#ai-copy').addEventListener('click', async () => {
+  const topic = $('#ai-topic').value.trim();
+  if (!topic) { $('#ai-status').textContent = '먼저 발표 주제를 적어 주세요'; $('#ai-topic').focus(); return; }
+  const n = Math.min(30, Math.max(3, +$('#ai-n').value || 8));
+  const p = aiPrompt(topic, n, $('#ai-extra').value.trim());
+  try { await navigator.clipboard.writeText(p); $('#ai-status').textContent = '프롬프트를 복사했습니다. AI에 붙여넣고, 받은 답을 위 칸에 붙여넣으세요.'; }
+  catch (e) {   // 클립보드 권한이 없으면 답 칸에 띄워 직접 복사하게
+    $('#ai-answer').value = p; $('#ai-answer').select();
+    $('#ai-status').textContent = '자동 복사가 막혔습니다. 칸에 띄운 프롬프트를 ⌘C로 복사한 뒤 지우고 답을 붙여넣으세요.';
+  }
+});
+async function aiBuild(replace) {
+  let parsed;
+  try { parsed = parseOutline($('#ai-answer').value); }
+  catch (err) { $('#ai-status').textContent = '⚠ ' + err.message; return; }
+  const key = $('#ai-deck').value;
+  if (replace && doc.objects.length) {
+    $('#adlg').close();
+    const ok = await ask({ title: 'AI 덱 만들기', msg: `지금 캔버스를 비우고 슬라이드 ${parsed.outline.length}장으로 새로 만듭니다. 지금 작업이 필요하면 먼저 JSON으로 저장하세요.`, ok: '새로 만들기' });
+    if (!ok) { $('#adlg').showModal(); return; }
+  } else $('#adlg').close();
+  buildDeck(key, parsed.outline, { replace, title: parsed.title });
+}
+$('#ai-build').addEventListener('click', () => aiBuild(true));
+$('#ai-append').addEventListener('click', () => aiBuild(false));
+$('#ai-close').addEventListener('click', () => $('#adlg').close());
+$('#ai-answer').addEventListener('input', () => {
+  const v = $('#ai-answer').value.trim();
+  if (!v) { $('#ai-status').textContent = ''; return; }
+  try { const p = parseOutline(v); $('#ai-status').textContent = `✓ 슬라이드 ${p.outline.length}장: ${p.outline.map(c => LAYOUTS[c.layout].name).join(' · ')}`; }
+  catch (err) { $('#ai-status').textContent = '⚠ ' + err.message; }
+});
 /* 레이아웃 고르기 (새 슬라이드 ▾) */
 $('#layout-pop').innerHTML = Object.entries(LAYOUTS).map(([k, L]) => `<button data-act="newSlide" data-arg="${k}">${layoutIcon(k)}<span>${esc(L.name)}</span></button>`).join('');
 /* 템플릿 창: 새 문서로 만들기 전에는 지금 문서가 사라진다고 확인 */
