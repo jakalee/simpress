@@ -111,8 +111,29 @@ function measure(o) {
 function renderAll() {
   document.documentElement.style.cssText = themeVars();
   stage.style.background = 'var(--c-bg)';
-  world.innerHTML = doc.objects.map(o => objHTML(o)).join('');
+  /* 실행 중인 임베드 iframe은 DOM에서 빼면 다시 로딩되므로, 그 요소만 남겨 두고 나머지를 주변에 다시 끼움 */
+  const keep = new Map($$('.o-embed', world).filter(el => el.querySelector('.emb-live')).map(el => [el.dataset.id, el]));
+  if (!keep.size) world.innerHTML = doc.objects.map(o => objHTML(o)).join('');
+  else {
+    [...world.children].forEach(c => { if (!keep.has(c.dataset.id)) c.remove(); });
+    const t = document.createElement('template');
+    let cur = world.firstElementChild;
+    doc.objects.forEach(o => {
+      t.innerHTML = objHTML(o);
+      const n = t.content.firstElementChild, k = o.type === 'embed' && keep.get(o.id);
+      if (!k) { world.insertBefore(n, cur); return; }
+      keep.delete(o.id);
+      const on = k.classList.contains('emb-on');
+      k.className = n.className; k.classList.toggle('emb-on', on);
+      k.setAttribute('style', n.getAttribute('style') || '');
+      const ph = k.querySelector('.emb-ph'), nph = n.querySelector('.emb-ph');
+      if (ph && nph) ph.replaceWith(nph);
+      if (k === cur) cur = cur.nextElementSibling; else world.insertBefore(k, cur);
+    });
+    keep.forEach(el => el.remove());
+  }
   doc.objects.forEach(measure);
+  syncLiveEmbeds();
   refreshConnectors();
   markSelection(); syncOverlay(); drawMini(); renderPathList(); renderLayers(); renderProps();
 }
@@ -120,7 +141,10 @@ function renderObj(o) {
   const el = elOf(o);
   if (!el) return;
   el.style.cssText = objStyle(o);
-  el.innerHTML = objInner(o, 'edit', editorSrc);
+  const live = o.type === 'embed' && el.querySelector('.emb-live'), ph = live && el.querySelector('.emb-ph');
+  if (ph) { const t = document.createElement('template'); t.innerHTML = objInner(o, 'edit', editorSrc); ph.replaceWith(t.content.firstElementChild); }
+  else { el.innerHTML = objInner(o, 'edit', editorSrc); if (o.type === 'embed') el._sig = undefined; }
+  if (o.type === 'embed') liveEmbed(el, o);
   el.classList.toggle('locked', !!o.locked);
   el.classList.toggle('fxhid', !!o.fxHidden);
   measure(o);

@@ -5529,6 +5529,8 @@ const OBJ_CSS = `
 .o-embed .emb-ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3%;border:2px solid rgba(120,128,140,.35);border-radius:14px;background:rgba(128,136,150,.08);color:rgba(90,98,110,.95);font:30px -apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;text-align:center;padding:0 6%;box-sizing:border-box;overflow:hidden}
 .o-embed .emb-ph span{font-size:.65em;opacity:.75;word-break:break-all}
 .o-embed .emb-frame{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff;border-radius:6px}
+.o-embed .emb-live{pointer-events:none;opacity:0;transition:opacity .25s}
+.o-embed.emb-on .emb-live{opacity:1}
 .o-connector,.o-ink{pointer-events:none}.o-connector .hit,.o-ink .hit{pointer-events:stroke}
 .o-chart.play .ca{animation:.75s cubic-bezier(.2,.8,.2,1) both}
 .o-chart.play .cb.ca{transform-box:fill-box;transform-origin:50% 100%;animation-name:chUp}
@@ -6481,7 +6483,47 @@ function openEmbedPreview() {
 }
 function closeEmbedPreview() { $('#emb-host').innerHTML = ''; if ($('#edlg').open) $('#edlg').close(); }
 
-/* ── 발표 화면용 실행 코드: 슬라이드에 들어오면 불러오고 나가면 내림 (소리·CPU 정지) ── */
+/* ── 임베드 안 리소스(CDN 스크립트·CSS)를 못 불러오면(오프라인 등) 부모에 알려 자리표시(</>)로 되돌림 ── */
+const EMB_FAIL_JS = '<scr' + 'ipt>addEventListener("error",function(e){var t=e.target;if(t&&t.tagName&&(t.tagName==="SCRIPT"||t.tagName==="LINK"))parent.postMessage({zcEmbFail:1},"*");},true);</scr' + 'ipt>';
+/* 문서 모드(doctype)를 깨지 않도록 <head> 바로 뒤에 끼움 (발표 런타임에서도 그대로 씀) */
+function injectHead(h, js) {
+  h = String(h || ''); var l = h.toLowerCase(), i = l.indexOf('<head'), j;
+  if (i < 0) i = l.indexOf('<html');
+  if (i < 0 && l.replace(/^\s+/, '').indexOf('<!doctype') === 0) i = l.indexOf('<!doctype');
+  if (i >= 0 && (j = l.indexOf('>', i)) > 0) return h.slice(0, j + 1) + js + h.slice(j + 1);
+  return js + h;
+}
+
+/* ── 편집 화면: HTML·주소가 있으면 실제로 실행해서 보여 줌 (클릭은 통과 → 선택·이동 그대로) ── */
+const embFail = new Map();   // 불러오기에 실패한 임베드 id → 그때 내용 (같은 내용이면 다시 시도 안 함)
+const embSig = o => o.mode === 'url' ? (isWebURL(o.url) && navigator.onLine !== false ? 'u|' + o.url : '') : (o.html ? 'h|' + o.html : '');
+function liveEmbed(el, o) {
+  const want = embSig(o);
+  if (el._sig === want) return;
+  el._sig = want;
+  el.querySelectorAll('.emb-live').forEach(f => f.remove());
+  el.classList.remove('emb-on');
+  if (!want || embFail.get(o.id) === want) return;   // 내용 없음·불러오기 실패 → 자리표시
+  const f = document.createElement('iframe');
+  f.className = 'emb-frame emb-live'; f.tabIndex = -1;
+  f.setAttribute('sandbox', o.mode === 'url' ? EMBED_SB_URL : EMBED_SB_HTML);
+  f.setAttribute('allow', 'autoplay; fullscreen; xr-spatial-tracking');
+  f.addEventListener('load', () => { if (f.isConnected) el.classList.add('emb-on'); });
+  if (o.mode === 'url') f.src = o.url; else f.srcdoc = injectHead(o.html, EMB_FAIL_JS);
+  el.appendChild(f);
+}
+function syncLiveEmbeds() { $$('.o-embed', world).forEach(el => { const o = getObj(el.dataset.id); if (o) liveEmbed(el, o); }); }
+addEventListener('message', e => {
+  if (!e.data || !e.data.zcEmbFail) return;
+  const f = $$('.emb-live').find(x => x.contentWindow === e.source);
+  if (!f) return;
+  const el = f.closest('.o-embed');
+  embFail.set(el.dataset.id, el._sig); f.remove(); el.classList.remove('emb-on');
+});
+/* 인터넷이 돌아오거나 끊기면 다시 판단 */
+['online', 'offline'].forEach(ev => addEventListener(ev, () => { embFail.clear(); $$('.o-embed', world).forEach(el => { el._sig = undefined; }); syncLiveEmbeds(); }));
+
+/* ── 발표 화면용 실행 코드 ── */
 function embedRuntime() {
   return `(function(){
 var SBH=${JSON.stringify(EMBED_SB_HTML)},SBU=${JSON.stringify(EMBED_SB_URL)};
@@ -6492,14 +6534,18 @@ function start(el){
   var id=el.getAttribute('data-id'),o=data.objects.find(function(x){return x.id===id;});if(!o)return;
   var f=document.createElement('iframe');f.className='emb-frame';
   f.setAttribute('sandbox',o.mode==='url'?SBU:SBH);f.setAttribute('allow','autoplay; fullscreen; xr-spatial-tracking');
-  if(o.mode==='url'){if(!web(o.url))return;f.src=o.url;}else f.srcdoc=(o.html||'')+KEYFWD;
+  if(o.mode==='url'){if(!web(o.url)||navigator.onLine===false)return;f.src=o.url;}else f.srcdoc=injectHead(o.html,FAIL)+KEYFWD;
   el.appendChild(f);
 }
+var FAIL=${JSON.stringify(EMB_FAIL_JS).replace(/</g, '\\u003c')};
+${injectHead.toString()}
 /* 임베드 안을 클릭하면 키 포커스가 그 안으로 들어가므로, 리모컨 키(PageUp/PageDown)는 발표로 돌려줌 */
 var KEYFWD='<scr'+'ipt>addEventListener("keydown",function(e){if(e.key==="PageDown"||e.key==="PageUp"){e.preventDefault();parent.postMessage({zcKey:e.key},"*");}},true);</scr'+'ipt>';
 window.addEventListener('message',function(e){
-  var d=e.data;if(!d||(d.zcKey!=='PageDown'&&d.zcKey!=='PageUp'))return;
-  var ok=[].some.call(document.querySelectorAll('.emb-frame'),function(f){return f.contentWindow===e.source;});if(!ok)return;
+  var d=e.data;if(!d)return;
+  var src=[].filter.call(document.querySelectorAll('.emb-frame'),function(f){return f.contentWindow===e.source;})[0];if(!src)return;
+  if(d.zcEmbFail){src.remove();return;}   // CDN 등을 못 불러옴 → 자리표시(</>)가 보이게
+  if(d.zcKey!=='PageDown'&&d.zcKey!=='PageUp')return;
   try{document.activeElement&&document.activeElement.blur();}catch(_){}
   if(window.impress){var a=impress();d.zcKey==='PageDown'?a.next():a.prev();}
 });
@@ -6845,8 +6891,29 @@ function measure(o) {
 function renderAll() {
   document.documentElement.style.cssText = themeVars();
   stage.style.background = 'var(--c-bg)';
-  world.innerHTML = doc.objects.map(o => objHTML(o)).join('');
+  /* 실행 중인 임베드 iframe은 DOM에서 빼면 다시 로딩되므로, 그 요소만 남겨 두고 나머지를 주변에 다시 끼움 */
+  const keep = new Map($$('.o-embed', world).filter(el => el.querySelector('.emb-live')).map(el => [el.dataset.id, el]));
+  if (!keep.size) world.innerHTML = doc.objects.map(o => objHTML(o)).join('');
+  else {
+    [...world.children].forEach(c => { if (!keep.has(c.dataset.id)) c.remove(); });
+    const t = document.createElement('template');
+    let cur = world.firstElementChild;
+    doc.objects.forEach(o => {
+      t.innerHTML = objHTML(o);
+      const n = t.content.firstElementChild, k = o.type === 'embed' && keep.get(o.id);
+      if (!k) { world.insertBefore(n, cur); return; }
+      keep.delete(o.id);
+      const on = k.classList.contains('emb-on');
+      k.className = n.className; k.classList.toggle('emb-on', on);
+      k.setAttribute('style', n.getAttribute('style') || '');
+      const ph = k.querySelector('.emb-ph'), nph = n.querySelector('.emb-ph');
+      if (ph && nph) ph.replaceWith(nph);
+      if (k === cur) cur = cur.nextElementSibling; else world.insertBefore(k, cur);
+    });
+    keep.forEach(el => el.remove());
+  }
   doc.objects.forEach(measure);
+  syncLiveEmbeds();
   refreshConnectors();
   markSelection(); syncOverlay(); drawMini(); renderPathList(); renderLayers(); renderProps();
 }
@@ -6854,7 +6921,10 @@ function renderObj(o) {
   const el = elOf(o);
   if (!el) return;
   el.style.cssText = objStyle(o);
-  el.innerHTML = objInner(o, 'edit', editorSrc);
+  const live = o.type === 'embed' && el.querySelector('.emb-live'), ph = live && el.querySelector('.emb-ph');
+  if (ph) { const t = document.createElement('template'); t.innerHTML = objInner(o, 'edit', editorSrc); ph.replaceWith(t.content.firstElementChild); }
+  else { el.innerHTML = objInner(o, 'edit', editorSrc); if (o.type === 'embed') el._sig = undefined; }
+  if (o.type === 'embed') liveEmbed(el, o);
   el.classList.toggle('locked', !!o.locked);
   el.classList.toggle('fxhid', !!o.fxHidden);
   measure(o);
@@ -7933,6 +8003,7 @@ function insertObj(o) {
     world.insertAdjacentHTML('beforeend', objHTML(o));
   }
   measure(o);
+  if (o.type === 'embed') { const el = elOf(o); if (el) liveEmbed(el, o); }
   return o;
 }
 function addText(p, style = 'body') {
@@ -8479,7 +8550,7 @@ function embedProps(o) {
     <p class="note">끄면(기본) 발표를 열 때부터 계속 실행되어 전체 보기·전환 중에도 보입니다. 무겁거나 소리가 나는 페이지만 켜세요.</p>
     <p class="note">발표 중 바로 클릭·드래그로 조작됩니다. 안을 클릭한 뒤 화살표 키는 임베드로 가니, 슬라이드 넘김은 바깥 클릭·리모컨(PageDown)으로 하세요.</p>
     <button class="wide" data-act="embedPreview">미리보기 (실행해 보기)</button>
-    <p class="note">편집 화면에서는 실행하지 않습니다 (테스트 실행·내보낸 HTML에서 실행). PDF에는 자리표시로 들어갑니다.</p>`;
+    <p class="note">편집 화면에서도 실행해 보여 줍니다 (조작은 미리보기·발표에서). 인터넷이 없어 라이브러리를 못 불러오면 &lt;/&gt; 자리표시로 돌아갑니다. PDF에는 자리표시로 들어갑니다.</p>`;
 }
 function connectorProps(o) {
   const a = getObj(o.from), b = getObj(o.to);

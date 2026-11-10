@@ -178,7 +178,47 @@ function openEmbedPreview() {
 }
 function closeEmbedPreview() { $('#emb-host').innerHTML = ''; if ($('#edlg').open) $('#edlg').close(); }
 
-/* ── 발표 화면용 실행 코드: 슬라이드에 들어오면 불러오고 나가면 내림 (소리·CPU 정지) ── */
+/* ── 임베드 안 리소스(CDN 스크립트·CSS)를 못 불러오면(오프라인 등) 부모에 알려 자리표시(</>)로 되돌림 ── */
+const EMB_FAIL_JS = '<scr' + 'ipt>addEventListener("error",function(e){var t=e.target;if(t&&t.tagName&&(t.tagName==="SCRIPT"||t.tagName==="LINK"))parent.postMessage({zcEmbFail:1},"*");},true);</scr' + 'ipt>';
+/* 문서 모드(doctype)를 깨지 않도록 <head> 바로 뒤에 끼움 (발표 런타임에서도 그대로 씀) */
+function injectHead(h, js) {
+  h = String(h || ''); var l = h.toLowerCase(), i = l.indexOf('<head'), j;
+  if (i < 0) i = l.indexOf('<html');
+  if (i < 0 && l.replace(/^\s+/, '').indexOf('<!doctype') === 0) i = l.indexOf('<!doctype');
+  if (i >= 0 && (j = l.indexOf('>', i)) > 0) return h.slice(0, j + 1) + js + h.slice(j + 1);
+  return js + h;
+}
+
+/* ── 편집 화면: HTML·주소가 있으면 실제로 실행해서 보여 줌 (클릭은 통과 → 선택·이동 그대로) ── */
+const embFail = new Map();   // 불러오기에 실패한 임베드 id → 그때 내용 (같은 내용이면 다시 시도 안 함)
+const embSig = o => o.mode === 'url' ? (isWebURL(o.url) && navigator.onLine !== false ? 'u|' + o.url : '') : (o.html ? 'h|' + o.html : '');
+function liveEmbed(el, o) {
+  const want = embSig(o);
+  if (el._sig === want) return;
+  el._sig = want;
+  el.querySelectorAll('.emb-live').forEach(f => f.remove());
+  el.classList.remove('emb-on');
+  if (!want || embFail.get(o.id) === want) return;   // 내용 없음·불러오기 실패 → 자리표시
+  const f = document.createElement('iframe');
+  f.className = 'emb-frame emb-live'; f.tabIndex = -1;
+  f.setAttribute('sandbox', o.mode === 'url' ? EMBED_SB_URL : EMBED_SB_HTML);
+  f.setAttribute('allow', 'autoplay; fullscreen; xr-spatial-tracking');
+  f.addEventListener('load', () => { if (f.isConnected) el.classList.add('emb-on'); });
+  if (o.mode === 'url') f.src = o.url; else f.srcdoc = injectHead(o.html, EMB_FAIL_JS);
+  el.appendChild(f);
+}
+function syncLiveEmbeds() { $$('.o-embed', world).forEach(el => { const o = getObj(el.dataset.id); if (o) liveEmbed(el, o); }); }
+addEventListener('message', e => {
+  if (!e.data || !e.data.zcEmbFail) return;
+  const f = $$('.emb-live').find(x => x.contentWindow === e.source);
+  if (!f) return;
+  const el = f.closest('.o-embed');
+  embFail.set(el.dataset.id, el._sig); f.remove(); el.classList.remove('emb-on');
+});
+/* 인터넷이 돌아오거나 끊기면 다시 판단 */
+['online', 'offline'].forEach(ev => addEventListener(ev, () => { embFail.clear(); $$('.o-embed', world).forEach(el => { el._sig = undefined; }); syncLiveEmbeds(); }));
+
+/* ── 발표 화면용 실행 코드 ── */
 function embedRuntime() {
   return `(function(){
 var SBH=${JSON.stringify(EMBED_SB_HTML)},SBU=${JSON.stringify(EMBED_SB_URL)};
@@ -189,14 +229,18 @@ function start(el){
   var id=el.getAttribute('data-id'),o=data.objects.find(function(x){return x.id===id;});if(!o)return;
   var f=document.createElement('iframe');f.className='emb-frame';
   f.setAttribute('sandbox',o.mode==='url'?SBU:SBH);f.setAttribute('allow','autoplay; fullscreen; xr-spatial-tracking');
-  if(o.mode==='url'){if(!web(o.url))return;f.src=o.url;}else f.srcdoc=(o.html||'')+KEYFWD;
+  if(o.mode==='url'){if(!web(o.url)||navigator.onLine===false)return;f.src=o.url;}else f.srcdoc=injectHead(o.html,FAIL)+KEYFWD;
   el.appendChild(f);
 }
+var FAIL=${JSON.stringify(EMB_FAIL_JS).replace(/</g, '\\u003c')};
+${injectHead.toString()}
 /* 임베드 안을 클릭하면 키 포커스가 그 안으로 들어가므로, 리모컨 키(PageUp/PageDown)는 발표로 돌려줌 */
 var KEYFWD='<scr'+'ipt>addEventListener("keydown",function(e){if(e.key==="PageDown"||e.key==="PageUp"){e.preventDefault();parent.postMessage({zcKey:e.key},"*");}},true);</scr'+'ipt>';
 window.addEventListener('message',function(e){
-  var d=e.data;if(!d||(d.zcKey!=='PageDown'&&d.zcKey!=='PageUp'))return;
-  var ok=[].some.call(document.querySelectorAll('.emb-frame'),function(f){return f.contentWindow===e.source;});if(!ok)return;
+  var d=e.data;if(!d)return;
+  var src=[].filter.call(document.querySelectorAll('.emb-frame'),function(f){return f.contentWindow===e.source;})[0];if(!src)return;
+  if(d.zcEmbFail){src.remove();return;}   // CDN 등을 못 불러옴 → 자리표시(</>)가 보이게
+  if(d.zcKey!=='PageDown'&&d.zcKey!=='PageUp')return;
   try{document.activeElement&&document.activeElement.blur();}catch(_){}
   if(window.impress){var a=impress();d.zcKey==='PageDown'?a.next():a.prev();}
 });

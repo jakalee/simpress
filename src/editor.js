@@ -127,6 +127,7 @@ function insertObj(o) {
     world.insertAdjacentHTML('beforeend', objHTML(o));
   }
   measure(o);
+  if (o.type === 'embed') { const el = elOf(o); if (el) liveEmbed(el, o); }
   return o;
 }
 function addText(p, style = 'body') {
@@ -673,7 +674,7 @@ function embedProps(o) {
     <p class="note">끄면(기본) 발표를 열 때부터 계속 실행되어 전체 보기·전환 중에도 보입니다. 무겁거나 소리가 나는 페이지만 켜세요.</p>
     <p class="note">발표 중 바로 클릭·드래그로 조작됩니다. 안을 클릭한 뒤 화살표 키는 임베드로 가니, 슬라이드 넘김은 바깥 클릭·리모컨(PageDown)으로 하세요.</p>
     <button class="wide" data-act="embedPreview">미리보기 (실행해 보기)</button>
-    <p class="note">편집 화면에서는 실행하지 않습니다 (테스트 실행·내보낸 HTML에서 실행). PDF에는 자리표시로 들어갑니다.</p>`;
+    <p class="note">편집 화면에서도 실행해 보여 줍니다 (조작은 미리보기·발표에서). 인터넷이 없어 라이브러리를 못 불러오면 &lt;/&gt; 자리표시로 돌아갑니다. PDF에는 자리표시로 들어갑니다.</p>`;
 }
 function connectorProps(o) {
   const a = getObj(o.from), b = getObj(o.to);

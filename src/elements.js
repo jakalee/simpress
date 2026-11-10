@@ -48,6 +48,8 @@ const OBJ_CSS = `
 .o-embed .emb-ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3%;border:2px solid rgba(120,128,140,.35);border-radius:14px;background:rgba(128,136,150,.08);color:rgba(90,98,110,.95);font:30px -apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;text-align:center;padding:0 6%;box-sizing:border-box;overflow:hidden}
 .o-embed .emb-ph span{font-size:.65em;opacity:.75;word-break:break-all}
 .o-embed .emb-frame{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff;border-radius:6px}
+.o-embed .emb-live{pointer-events:none;opacity:0;transition:opacity .25s}
+.o-embed.emb-on .emb-live{opacity:1}
 .o-connector,.o-ink{pointer-events:none}.o-connector .hit,.o-ink .hit{pointer-events:stroke}
 .o-chart.play .ca{animation:.75s cubic-bezier(.2,.8,.2,1) both}
 .o-chart.play .cb.ca{transform-box:fill-box;transform-origin:50% 100%;animation-name:chUp}
