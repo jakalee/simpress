@@ -6,7 +6,9 @@
 
 **No install. No account. No server.** Arrange content on an infinite canvas, connect frames into a presentation path, and export a standalone HTML file.
 
-[![Simple Impress Editor demo](assets/demo.gif)](https://jakalee.github.io/simpress/)
+[![Simple Impress Editor demo video](https://img.youtube.com/vi/ab3UqkjCUUY/maxresdefault.jpg)](https://youtu.be/ab3UqkjCUUY)
+
+▶ [Watch the demo on YouTube](https://youtu.be/ab3UqkjCUUY)
 
 ## Why
 

@@ -6,7 +6,9 @@
 
 **설치도, 계정도, 서버도 필요 없습니다.** 무한 캔버스에 콘텐츠를 배치하고 프레임을 발표 경로로 연결한 다음, 독립 실행형 HTML 파일 하나로 내보낼 수 있습니다.
 
-[![Simple Impress Editor 데모](assets/demo.gif)](https://jakalee.github.io/simpress/)
+[![Simple Impress Editor 데모 영상](https://img.youtube.com/vi/ab3UqkjCUUY/maxresdefault.jpg)](https://youtu.be/ab3UqkjCUUY)
+
+▶ [YouTube에서 데모 영상 보기](https://youtu.be/ab3UqkjCUUY)
 
 ## 왜 만들었나요?
 
