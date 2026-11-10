@@ -45,6 +45,11 @@ const OBJ_CSS = `
 .o-model .mv-snap{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
 .o-model.mv-on .mv-snap{visibility:hidden}
 .o-model .mv-wait{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4%;border:2px dashed rgba(120,128,140,.5);border-radius:12px;color:rgba(120,128,140,.9);font:28px sans-serif}
+.o-embed .emb-ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3%;border:2px solid rgba(120,128,140,.35);border-radius:14px;background:rgba(128,136,150,.08);color:rgba(90,98,110,.95);font:30px -apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;text-align:center;padding:0 6%;box-sizing:border-box;overflow:hidden}
+.o-embed .emb-ph span{font-size:.65em;opacity:.75;word-break:break-all}
+.o-embed .emb-frame{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff;border-radius:6px}
+.o-embed .emb-cover{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:4%;cursor:pointer;background:linear-gradient(transparent 70%,rgba(0,0,0,.28))}
+.o-embed .emb-cover span{padding:.4em 1em;border-radius:999px;background:rgba(20,26,36,.82);color:#fff;font:22px -apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif}
 .o-connector,.o-ink{pointer-events:none}.o-connector .hit,.o-ink .hit{pointer-events:stroke}
 .o-chart.play .ca{animation:.75s cubic-bezier(.2,.8,.2,1) both}
 .o-chart.play .cb.ca{transform-box:fill-box;transform-origin:50% 100%;animation-name:chUp}
@@ -77,6 +82,7 @@ function makeObj(type, props) {
   if (type === 'chart') Object.assign(base, { kind: 'bar', title: '', fs: 28, font: 'sans', legend: true, labels: false, grid: true, anim: true,
     data: [['항목', '2024', '2025'], ['1분기', '42', '55'], ['2분기', '58', '61'], ['3분기', '49', '72'], ['4분기', '66', '80']] });
   if (type === 'model') Object.assign(base, { asset: null, srcName: '', thumbA: null, thumbSig: '', partNames: [], bg: null, spin: true, speed: 1, orbit: true, anim: true, yaw: 30, pitch: 20, zoom: 1, exposure: 1, parts: {} });
+  if (type === 'embed') Object.assign(base, { mode: 'html', html: '', url: '', srcName: '', cover: true });
   if (type === 'connector') Object.assign(base, { from: null, to: null, route: 'elbow', stroke: null, sw: 6, head: 'end', dash: false, d: '' });
   if (type === 'ink') Object.assign(base, { d: '', stroke: null, sw: 6 });
   if (type === 'frame') Object.assign(base, { frame: 'bracket', color: null, fill: null, notes: '' });
@@ -227,6 +233,15 @@ function objInner(o, mode, srcOf) {
     return src ? `<img class="mv-snap" alt="" draggable="false" ${src}>`
       : `<div class="mv-wait"><svg viewBox="0 0 24 24" width="22%" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="M3 7l9 5 9-5M12 12v10"/></svg><span>3D 모델 준비 중…</span></div>`;
   }
+  if (o.type === 'embed') {
+    /* 편집 화면·썸네일·PDF는 자리표시. 발표 화면에서는 이 위에 iframe이 얹힘 */
+    const web = o.mode === 'url';
+    const title = o.name || o.srcName || (web ? (o.url || '').replace(/^https?:\/\//, '').split('/')[0] : 'HTML') || '웹 임베드';
+    const sub = web ? (o.url || '주소 없음') : (o.html ? `HTML ${Math.max(1, Math.round(o.html.length / 1024))}KB` : 'HTML 없음');
+    return `<div class="emb-ph"><svg viewBox="0 0 24 24" width="14%" fill="none" stroke="currentColor" stroke-width="1.4">${web
+      ? '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>'
+      : '<path d="m8 8-4 4 4 4M16 8l4 4-4 4M14 5l-4 14"/>'}</svg><b>${esc(title)}</b><span>${esc(sub.slice(0, 80))}</span></div>`;
+  }
   if (o.type === 'ink') {
     const c = esc(o.stroke || 'var(--c-title)');
     return `<svg viewBox="0 0 ${o.w} ${o.h}"><path class="hit" d="${esc(o.d)}" fill="none" stroke="transparent" stroke-width="${o.sw + 16}" stroke-linecap="round"/><path d="${esc(o.d)}" fill="none" stroke="${c}" stroke-width="${o.sw}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -333,6 +348,7 @@ function objLabel(o) {
   if (o.type === 'shape') return plainText(o.text).slice(0, 30) || SHAPE_NAMES[o.shape] || '도형';
   if (o.type === 'table') return plainText((o.rows[0] || []).join(' · ')).slice(0, 30) || '표';
   if (o.type === 'model') return o.srcName ? o.srcName.replace(/\.[^.]+$/, '') : '3D 모델';
+  if (o.type === 'embed') return o.srcName || (o.mode === 'url' && o.url ? o.url.replace(/^https?:\/\//, '').slice(0, 40) : '웹 임베드');
   if (o.type === 'chart') return o.title || (CHART_KINDS.find(k => k[0] === o.kind) || ['', ''])[1] + ' 차트';
   return TYPE_NAMES[o.type] || o.type;
 }

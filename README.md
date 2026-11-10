@@ -39,6 +39,7 @@
 - Connectors that follow their objects (straight, elbow, curved) and a freehand pen
 - Interactions — hover effects, click actions (go to slide, open link, show/hide, run JavaScript), entrance effects
 - 3D models — import GLB, glTF, STL, OBJ, and CAD (STEP, IGES); live rendering in the presentation (auto-rotate, orbit, animation) with per-part visibility and color. three.js and the CAD converter load on demand from version-pinned CDNs; without internet a snapshot image is shown instead
+- Web embeds — a self-contained HTML file (stored in the document, works offline) or a URL inside a slide; sandboxed, loaded only when its slide is entered. Includes p5.js examples (pendulum, waves, particles, 3-phase rotating field)
 
 ## Privacy and portability
 

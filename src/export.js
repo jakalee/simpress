@@ -211,6 +211,7 @@ function buildShowHTML() {
   const has3D = doc.objects.some(o => o.type === 'model' && o.asset);
   const head3D = has3D ? `<script type="importmap">{"imports":{"three":"${MV.three}","three/addons/":"${MV.addons}"}}<\/script>` : '';
   const run3D = has3D ? `<script type="module">${modelRuntime().replace(/<\/script/gi, '<\\/script')}<\/script>` : '';
+  const runEmb = doc.objects.some(o => o.type === 'embed') ? `<script>${embedRuntime().replace(/<\/script/gi, '<\\/script')}<\/script>` : '';
   return `<!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(doc.title)}</title>
@@ -227,6 +228,7 @@ ${steps}
 <script type="application/json" id="zc-data">${data}<\/script>
 <script>${impressSrc}<\/script>
 <script>${SHOW_RUNTIME}<\/script>
+${runEmb}
 ${run3D}
 </body></html>`;
 }
@@ -317,7 +319,7 @@ function parseDocText(text, name) {
   const data = JSON.parse(text);
   if (Array.isArray(data.objects)) {
     /* 구조 검증: 알려진 종류만, id는 영숫자만, 숫자 칸은 숫자로 (HTML 속성 주입 방지) */
-    const TYPES = ['frame', 'text', 'image', 'shape', 'video', 'table', 'chart', 'connector', 'ink', 'model', 'sim'];
+    const TYPES = ['frame', 'text', 'image', 'shape', 'video', 'table', 'chart', 'connector', 'ink', 'model', 'embed'];
     const NUMS = ['x', 'y', 'z', 'w', 'h', 's', 'rot', 'rx', 'ry', 'opacity', 'fs', 'fw', 'sw', 'radius', 'speed', 'yaw', 'pitch', 'zoom', 'exposure'];
     const HEX = /^#[0-9a-f]{6}$/i;
     const safeId = v => String(v ?? '').replace(/[^\w-]/g, '');
@@ -327,6 +329,12 @@ function parseDocText(text, name) {
       NUMS.forEach(k => { if (k in o) { const v = +o[k]; o[k] = Number.isFinite(v) ? v : (k === 's' || k === 'opacity' ? 1 : 0); } });
       if (o.p && typeof o.p === 'object') Object.keys(o.p).forEach(k => { const v = +o.p[k]; if (Number.isFinite(v)) o.p[k] = v; else delete o.p[k]; });
       if (o.type === 'connector') { o.from = safeId(o.from); o.to = safeId(o.to); }
+      if (o.type === 'embed') {
+        /* HTML은 sandbox iframe에서만 실행되므로 내용은 그대로 두고, 종류·주소만 검증 */
+        o.mode = o.mode === 'url' ? 'url' : 'html';
+        o.html = String(o.html || ''); o.srcName = String(o.srcName || ''); o.cover = o.cover !== false;
+        o.url = /^https?:\/\/[^\s]+$/i.test(String(o.url || '').trim()) ? String(o.url).trim() : '';
+      }
       if (o.type === 'model') {
         o.asset = safeId(o.asset); o.thumbA = safeId(o.thumbA) || null; o.srcName = String(o.srcName || '');
         o.bg = HEX.test(o.bg) ? o.bg : null;

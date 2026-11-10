@@ -34,6 +34,7 @@
   <symbol id="i-unlock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></symbol>
   <symbol id="i-table" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9.5h18M3 15h18M9.5 4v16"/></symbol>
   <symbol id="i-cube" viewBox="0 0 24 24"><path d="M12 2.5 3.5 7v10l8.5 4.5 8.5-4.5V7z"/><path d="M3.5 7 12 11.5 20.5 7M12 11.5v10"/></symbol>
+  <symbol id="i-web" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 8.5h18M6 6.3h.01M8.5 6.3h.01"/><path d="m10 12.5-2 2 2 2M14 12.5l2 2-2 2"/></symbol>
   <symbol id="i-sim" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.2"/><ellipse cx="12" cy="12" rx="9.5" ry="4"/><ellipse cx="12" cy="12" rx="9.5" ry="4" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="9.5" ry="4" transform="rotate(120 12 12)"/></symbol>
   <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V4M4 20h16"/><path d="M8 16v-5M12 16V8M16 16v-7"/></symbol>
   <symbol id="i-pen" viewBox="0 0 24 24"><path d="M4 20l1-4L16 5l3 3L8 19z"/><path d="M14 7l3 3"/></symbol>
@@ -63,6 +64,8 @@
   <button class="tb" data-act="table" title="표"><svg class="ic"><use href="#i-table"/></svg>표</button>
   <button class="tb" data-act="chart" title="차트"><svg class="ic"><use href="#i-chart"/></svg>차트</button>
   <button class="tb" data-act="model" title="3D 모델 (GLB · STL · OBJ · STEP · IGES)"><svg class="ic"><use href="#i-cube"/></svg>3D</button>
+  <details class="dd"><summary class="tb" title="웹 임베드: HTML 파일이나 웹 주소를 슬라이드 안에 띄웁니다"><svg class="ic"><use href="#i-web"/></svg>웹<svg class="ic chev"><use href="#i-chev"/></svg></summary>
+    <div class="pop" id="embed-pop"><button data-act="embedFile">HTML 파일…</button><button data-act="embedURL">웹 주소(URL)…</button><hr></div></details>
   <details class="dd"><summary class="tb"><svg class="ic"><use href="#i-video"/></svg>영상<svg class="ic chev"><use href="#i-chev"/></svg></summary>
     <div class="pop"><button data-act="videoURL">YouTube·영상 주소</button><button data-act="videoFile">영상 파일</button></div></details>
   <button class="tb" id="btn-connect" data-act="connect" title="연결선: 두 객체를 차례로 누르면 이어지고, 객체를 옮기면 따라옵니다"><svg class="ic"><use href="#i-connect"/></svg>연결선</button>
@@ -151,6 +154,12 @@
   <div id="mv-host"></div>
   <div class="dlg-b"><button class="tb" data-mv="cancel">닫기</button><button class="tb primary" data-mv="save">이 각도로 저장</button></div>
 </dialog>
+<dialog id="edlg">
+  <div class="mv-head"><b>웹 임베드 미리보기</b><span class="note">발표 화면과 같은 격리(sandbox) 상태로 실행합니다</span></div>
+  <div id="emb-host"></div>
+  <div class="dlg-b"><button class="tb primary" data-emb="close">닫기</button></div>
+</dialog>
+<input type="file" id="file-html" accept=".html,.htm" hidden>
 <input type="file" id="file-model" accept=".glb,.gltf,.stl,.obj,.step,.stp,.iges,.igs" hidden>
 <input type="file" id="file-image" accept="image/*" multiple hidden>
 <input type="file" id="file-video" accept="video/*" hidden>

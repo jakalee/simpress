@@ -401,6 +401,16 @@ const ACT = {
   chart: k => addChart(k || 'bar'),
   model: () => $('#file-model').click(),
   exportPDF: () => exportPDF(),
+  embedFile: () => $('#file-html').click(),
+  embedURL: () => addEmbedURL(),
+  /* 예제를 새 임베드로, 또는 선택한 HTML 임베드의 내용을 예제로 바꿈 */
+  embedExample(k) {
+    const o = selObjs().find(x => x.type === 'embed' && x.mode === 'html');
+    if (o) { o.html = exampleHTML(k); o.srcName = EMBED_EXAMPLES[k].name; commit(); renderObj(o); renderProps(); return; }
+    addEmbed({ mode: 'html', html: exampleHTML(k), srcName: EMBED_EXAMPLES[k].name });
+  },
+  embedMode(m) { selObjs().filter(x => x.type === 'embed').forEach(o => { o.mode = m; renderObj(o); }); commit(); renderProps(); },
+  embedPreview: () => openEmbedPreview(),
   modelPreview: openModelPreview,
   /* 부품 보이기/숨기기·모두 초기화 */
   partVis(i) { const o = selObjs().find(x => x.type === 'model'); if (!o) return; const p = o.parts[i] || {}; o.parts = { ...o.parts, [i]: { ...p, h: !p.h } }; commit(); renderProps(); },
@@ -538,7 +548,7 @@ const MENUS = [
   ['편집', [['실행 취소', 'undo', '', '⌘Z'], ['다시 실행', 'redo', '', '⇧⌘Z'], '-', ['복사', 'copy', '', '⌘C'], ['붙여넣기', 'paste', '', '⌘V'], ['복제', 'dup', '', '⌘D'], ['삭제', 'del', '', 'Delete'], '-',
     ['모두 선택', 'selectAll', '', '⌘A'], ['선택 해제', 'deselect', '', 'Esc']]],
   ['삽입', [['새 슬라이드', 'newSlide'], '-', ['텍스트', 'text', '', '더블클릭'], ['대괄호 프레임', 'frame', 'bracket'], ['원 프레임', 'frame', 'circle'], ['사각 프레임', 'frame', 'rect'], ['숨은 프레임', 'frame', 'hidden'], '-',
-    ['도형…', 'shapeMenu'], ['사각형', 'shape', 'rect'], ['원', 'shape', 'ellipse'], ['화살표', 'shape', 'arrow'], ['선', 'shape', 'line'], '-', ['표', 'table'], ['막대 차트', 'chart', 'bar'], ['꺾은선 차트', 'chart', 'line'], ['원 차트', 'chart', 'pie'], '-', ['3D 모델… (GLB·STL·OBJ·STEP·IGES)', 'model'], '-', ['연결선 잇기', 'connect'], ['펜으로 그리기', 'pen'], '-',
+    ['도형…', 'shapeMenu'], ['사각형', 'shape', 'rect'], ['원', 'shape', 'ellipse'], ['화살표', 'shape', 'arrow'], ['선', 'shape', 'line'], '-', ['표', 'table'], ['막대 차트', 'chart', 'bar'], ['꺾은선 차트', 'chart', 'line'], ['원 차트', 'chart', 'pie'], '-', ['3D 모델… (GLB·STL·OBJ·STEP·IGES)', 'model'], ['웹 임베드: HTML 파일…', 'embedFile'], ['웹 임베드: 웹 주소…', 'embedURL'], '-', ['연결선 잇기', 'connect'], ['펜으로 그리기', 'pen'], '-',
     ['이미지 파일…', 'image'], ['이미지 주소…', 'imageURL'], ['영상 주소…', 'videoURL'], ['영상 파일…', 'videoFile']]],
   ['슬라이드', [['처음부터 발표', 'runStart'], ['현재 슬라이드부터 발표', 'run', '', '⌘↵'], '-', ['새 슬라이드', 'newSlide'], ['현재 슬라이드 복제', 'dupSlide'], ['현재 슬라이드 삭제', 'delSlide'], '-',
     ['이전 슬라이드', 'prevSlide', '', 'PageUp'], ['다음 슬라이드', 'nextSlide', '', 'PageDown'], ['앞으로 옮기기', 'moveSlide', '-1'], ['뒤로 옮기기', 'moveSlide', '1'], '-',
@@ -640,6 +650,24 @@ function modelProps(o) {
     <h4>부품 <span class="note" style="font-weight:400">${names.length}개</span></h4>
     ${names.length ? `<div class="parts">${rows}</div><div class="grid2"><button class="wide" data-act="partsShowAll">모두 보이기</button><button class="wide" data-act="partsReset">부품 설정 초기화</button></div>` : '<p class="note">스냅샷을 만든 뒤 부품 목록이 나옵니다.</p>'}
     <p class="note">발표 화면에서는 이 슬라이드에 들어올 때 실시간으로 돌고, 나가면 멈춥니다. 인터넷이 없으면 스냅샷이 대신 보입니다. 기울어진 슬라이드에서는 마우스 회전 방향이 어긋날 수 있습니다.</p>`;
+}
+function embedProps(o) {
+  const ex = Object.entries(EMBED_EXAMPLES).map(([k, t]) => `<option value="${k}">${esc(t.name)}</option>`).join('');
+  const refs = o.mode === 'html' ? relativeRefs(o.html) : [];
+  const body = o.mode === 'url'
+    ? `<label class="row"><span>주소</span><input type="text" data-p="url" value="${esc(o.url)}" placeholder="https://…" style="width:150px"></label>
+       ${o.url && !isWebURL(o.url) ? '<p class="note warn">http:// 또는 https://로 시작해야 합니다</p>' : ''}
+       <p class="note">사이트가 임베드를 막으면 발표 화면에서 빈 칸이 됩니다. 미리보기로 먼저 확인하세요.</p>`
+    : `<div class="grid2"><button class="wide" data-act="embedFile">HTML 파일 열기…</button><select data-ex style="width:100%"><option value="">예제 넣기…</option>${ex}</select></div>
+       <h4>HTML 코드 <span class="note" style="font-weight:400">— ${Math.round((o.html || '').length / 1024)}KB</span></h4>
+       <textarea data-p="html" rows="10" spellcheck="false" class="mono code" placeholder="여기에 HTML을 붙여넣거나 파일을 여세요">${esc(o.html || '')}</textarea>
+       ${refs.length ? `<p class="note warn">같은 폴더 파일을 부르는 경로 ${refs.length}개는 동작하지 않습니다: ${esc(refs.slice(0, 3).join(', '))}</p>` : ''}
+       <p class="note">한 파일로 완결된 HTML만 됩니다 (라이브러리는 CDN 주소로). 격리된 상태로 실행되어 이 편집기의 데이터에는 접근할 수 없습니다.</p>`;
+  return `<h3>웹 임베드</h3>${seg('embedMode', [['html', 'HTML'], ['url', '웹 주소']], o.mode)}${body}
+    <label class="row"><span>'클릭해서 조작' 덮개</span><input type="checkbox" data-act="toggleProp" data-arg="cover"${o.cover !== false ? ' checked' : ''}></label>
+    <p class="note">조작이 필요한 페이지는 켜 두세요 (외부 iframe은 첫 클릭을 놓칩니다). 보기만 하는 애니메이션은 꺼도 됩니다.</p>
+    <button class="wide" data-act="embedPreview">미리보기 (실행해 보기)</button>
+    <p class="note">편집 화면에서는 실행하지 않고, 발표 화면에서 이 슬라이드에 들어올 때 불러옵니다. PDF에는 자리표시로 들어갑니다.</p>`;
 }
 function connectorProps(o) {
   const a = getObj(o.from), b = getObj(o.to);
@@ -758,7 +786,7 @@ $('#path-list').addEventListener('contextmenu', e => {
 });
 
 /* ── 왼쪽: 레이어 목록 (위가 맨 앞) ── */
-const TYPE_ICON = { frame: 'frame', text: 'text', image: 'image', shape: 'shape', video: 'video', table: 'table', chart: 'chart', connector: 'path', ink: 'pen', model: 'cube', sim: 'sim' };
+const TYPE_ICON = { frame: 'frame', text: 'text', image: 'image', shape: 'shape', video: 'video', table: 'table', chart: 'chart', connector: 'path', ink: 'pen', model: 'cube', embed: 'web' };
 function renderLayers() {
   const box = $('#layer-list');
   if (!box || $('#pane-layers').hidden) return;
@@ -883,6 +911,7 @@ function renderProps() {
   if (o.type === 'connector') { p.innerHTML = connectorProps(o) + acts; return; }
   if (o.type === 'ink') h = inkProps(o);
   if (o.type === 'model') h = modelProps(o);
+  if (o.type === 'embed') h = embedProps(o);
   if (o.type === 'image') h = `<h3>이미지</h3><label class="row"><span>모서리</span><input type="range" data-p="radius" min="0" max="200" value="${o.radius}"></label>`;
   if (o.type === 'video') h = `<h3>영상</h3><p class="note">편집 중에는 자리표시만 보이고, 테스트 실행과 내보낸 파일에서 재생됩니다.</p>`;
   if (o.type !== 'frame' && inPath) h += `<h4>발표자 노트</h4><textarea data-p="notes" rows="3" placeholder="발표 화면에서 P키로 봅니다">${esc(o.notes)}</textarea>`;
@@ -940,12 +969,25 @@ $('#props').addEventListener('change', e => {
   const k = e.target.dataset.p;
   if (k === 'name') { renderPathList(); renderLayers(); }
   if (k === 'click' || k === 'hover' || k === 'enter') { renderProps(); renderLayers(); }   // 대상 고르는 칸 표시
+  if (e.target.dataset.ex !== undefined && e.target.value) { ACT.embedExample(e.target.value); return; }
+  if (k === 'url' || k === 'html') { const o = selObjs().find(x => x.type === 'embed'); if (o) renderObj(o); renderProps(); }
   if (k === 'clickCode') { const w = $('#props .warn'); if (w && e.target.value.trim()) { w.remove(); $('#props [data-act=codeSample]')?.remove(); } }
 });
 
 /* ── 파일 입력·끌어다 놓기·붙여넣기 ── */
 $('#file-image').addEventListener('change', e => { addImages([...e.target.files]); e.target.value = ''; });
 $('#file-model').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) addModelFile(f); });
+/* HTML 파일: 선택한 HTML 임베드가 있으면 그 내용을 바꾸고, 없으면 새로 */
+$('#file-html').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  const o = selObjs().find(x => x.type === 'embed' && x.mode === 'html');
+  if (o) { o.html = await f.text(); o.srcName = f.name; commit(); renderObj(o); renderProps(); const r = relativeRefs(o.html); if (r.length) toast(`같은 폴더 파일 ${r.length}개는 불러올 수 없습니다`); }
+  else addEmbedFile(f);
+});
+$('#embed-pop').insertAdjacentHTML('beforeend', '<h5 class="ph">예제 (p5.js)</h5>' + Object.entries(EMBED_EXAMPLES).map(([k, t]) => `<button data-act="embedExample" data-arg="${k}">${esc(t.name)}</button>`).join(''));
+$('#edlg').addEventListener('click', e => { if (e.target.closest('[data-emb=close]')) closeEmbedPreview(); });
+$('#edlg').addEventListener('close', () => { $('#emb-host').innerHTML = ''; });
 /* 3D 미리보기 창: 저장·닫기, Esc로 닫아도 WebGL 해제 */
 $('#mdlg').addEventListener('click', e => { const b = e.target.closest('[data-mv]'); if (b) closeModelPreview(b.dataset.mv === 'save'); });
 $('#mdlg').addEventListener('close', () => closeModelPreview(false));
