@@ -201,10 +201,16 @@ window.addEventListener('message',function(e){
   if(window.impress){var a=impress();d.zcKey==='PageDown'?a.next():a.prev();}
 });
 function stop(el){[].forEach.call(el.querySelectorAll('.emb-frame'),function(x){x.remove();});}
-var els=function(s){return document.querySelectorAll('.o-embed[data-step="'+s+'"]');};
+/* 기본은 처음부터 불러와 계속 실행 (전체 보기·전환 중에도 보이게).
+   '보일 때만 실행'을 켠 것만 그 슬라이드로 가는 순간 불러오고, 떠나면 내림 (무거운 페이지·소리) */
+function lazy(el){var id=el.getAttribute('data-id'),o=data.objects.find(function(x){return x.id===id;});return !!(o&&o.lazy);}
+var els=function(s){return [].filter.call(document.querySelectorAll('.o-embed[data-step="'+s+'"]'),lazy);};
+document.addEventListener('impress:stepleave',function(e){
+  [].forEach.call(els(e.target.id),stop);
+  if(e.detail&&e.detail.next)[].forEach.call(els(e.detail.next.id),start);   // 전환이 시작될 때 미리
+});
 document.addEventListener('impress:stepenter',function(e){[].forEach.call(els(e.target.id),start);});
-document.addEventListener('impress:stepleave',function(e){[].forEach.call(els(e.target.id),stop);});
-[].forEach.call(document.querySelectorAll('.o-embed:not([data-step])'),start);   // 어느 슬라이드에도 속하지 않으면 바로
+[].forEach.call(document.querySelectorAll('.o-embed'),function(el){if(!lazy(el)||!el.hasAttribute('data-step'))start(el);});
 var cur=document.querySelector('.step.active');if(cur)[].forEach.call(els(cur.id),start);
 })();`;
 }
