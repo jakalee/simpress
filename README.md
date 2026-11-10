@@ -10,6 +10,19 @@
 
 ▶ [Watch the demo on YouTube](https://youtu.be/ab3UqkjCUUY)
 
+## What you can do with it
+
+- **Zooming, flying presentations as a single HTML file** — zoom, rotate and fly through 3D depth. Viewers just open it in a browser; nothing to install.
+- **Let AI build the whole deck** — type a topic, get an outline from any AI chat (ChatGPT, Claude, Gemini…), and simpress builds templated slides with speaker notes. No API key, no server.
+- **Live web pages inside slides** — p5.js simulations, maps, 3D plots or your own HTML apps run inside the slide and can be clicked and dragged mid-talk. They run live on the editing canvas too.
+- **Spin CAD models in front of the audience** — drop in STEP, IGES, STL or GLB and orbit it with the mouse; hide or recolor individual parts.
+- **Copy from Excel → paste → animated chart** — paste a range straight into one of 8 SVG chart types.
+- **Paste from anywhere** — screenshots, web images, and shapes or drawings copied from Apple Freeform or Keynote come in with ⌘V (pasted as images).
+- **Multilingual with one click** — every word in the exported HTML is real text, so Chrome's page translation turns the whole presentation into English, Japanese, Chinese or any other language. Send the same file to an international audience.
+- **Presenter console** — notes, current/next slide and a timer in a separate window; presentation clickers (PageUp/PageDown) work.
+- **PDF handouts too** — one slide per page, text stays vector.
+- **Nothing leaves your machine** — no account, no upload; everything is stored in your browser.
+
 ## Why
 
 - **Private by default** — your presentation stays in your browser.
@@ -43,7 +56,9 @@
 - Connectors that follow their objects (straight, elbow, curved) and a freehand pen
 - Interactions — hover effects, click actions (go to slide, open link, show/hide, run JavaScript), entrance effects
 - 3D models — import GLB, glTF, STL, OBJ, and CAD (STEP, IGES); live rendering in the presentation (auto-rotate, orbit, animation) with per-part visibility and color. three.js and the CAD converter load on demand from version-pinned CDNs; without internet a snapshot image is shown instead
-- Web embeds — a self-contained HTML file (stored in the document, works offline) or a URL inside a slide; sandboxed, loaded only when its slide is entered. Includes p5.js examples (pendulum, waves, particles, 3-phase rotating field)
+- Web embeds — a self-contained HTML file (stored in the document) or a URL inside a slide; sandboxed, shown running on the editing canvas and in overview, and directly clickable during the talk. Heavy pages can be set to "run only when visible"; if a library cannot load (offline), the embed falls back to a placeholder. Includes p5.js examples (pendulum, waves, particles, 3-phase rotating field)
+- Paste images from the clipboard (screenshots, shapes copied from Apple Freeform or Keynote) with ⌘V
+- Multilingual viewing — exported HTML is real text, so browser page translation (e.g. Chrome) can show it in any language
 
 ## Privacy and portability
 
