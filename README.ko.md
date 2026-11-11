@@ -62,6 +62,10 @@
 - 붙여넣기 — 클립보드의 이미지(스크린샷, Apple 프리폼·키노트에서 복사한 도형 등)를 ⌘V로 바로 삽입
 - 다국어 — 내보낸 HTML은 모두 실제 텍스트라 Chrome 페이지 번역 등으로 원하는 언어로 바꿔 볼 수 있음
 
+## AI로 발표자료 만들기 스킬
+
+[`skill/simpress-deck`](skill/simpress-deck/)은 작업지시서와 자료(pptx·pdf·svg·영상)를 주면 AI 에이전트가 simpress 발표자료(HTML + 편집용 JSON)를 만들어 주는 스킬입니다. Claude·Claude Code·기타 에이전트에 설치하는 법과 요청 양식은 [지침서](skill/simpress-deck/README.md)를 보세요.
+
 ## 개인정보와 이식성
 
 프레젠테이션 데이터는 브라우저에 저장되며 이 프로젝트가 서버로 업로드하지 않습니다. 다만 3D 모델(three.js·CAD 변환기)과 p5.js 예제를 쓰면 해당 라이브러리를 jsDelivr CDN에서 내려받습니다 (문서 내용은 보내지 않음). 브라우저 데이터를 지우면 자동 저장 문서도 사라지므로 중요한 작업은 JSON으로 저장해 두세요.

@@ -62,6 +62,10 @@
 - Paste images from the clipboard (screenshots, shapes copied from Apple Freeform or Keynote) with ⌘V
 - Multilingual viewing — exported HTML is real text, so browser page translation (e.g. Chrome) can show it in any language
 
+## AI deck-building skill
+
+[`skill/simpress-deck`](skill/simpress-deck/) is an agent skill: give it a brief and your source files (pptx, pdf, svg, video) and it builds a polished simpress deck (presentation HTML + editable JSON). See the [guide (Korean)](skill/simpress-deck/README.md) for installing it in Claude, Claude Code or other agents.
+
 ## Privacy and portability
 
 Presentation data is stored in the browser and is not uploaded by this project. Using 3D models (three.js, CAD converter) or the p5.js examples downloads those libraries from the jsDelivr CDN (no document content is sent). Clearing browser data also clears the autosaved document, so export important work as JSON.
