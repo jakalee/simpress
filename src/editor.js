@@ -409,6 +409,8 @@ function runShow(fromStart) {
   /* sandbox는 쓰지 않습니다: 격리하면 alert가 막히고 첫 클릭이 사라지며 발표자 콘솔·유튜브도 막힘.
      대신 편집 화면에서는 코드를 실행하지 않고, 남의 파일을 열 때 코드 유지 여부를 묻습니다 */
   layer.hidden = false;
+  /* 뒤에 깔린 편집 화면(그림 수백 개)을 내려 두어, 발표 iframe이 쓸 메모리를 비움 (사파리에서 그림이 빠지는 문제) */
+  document.body.classList.add('showing');
   f.src = showURL + start;
   f.onload = () => f.focus();
   layer.requestFullscreen?.().catch(() => {});
@@ -417,6 +419,7 @@ function closeShow() {
   const layer = $('#showlayer');
   if (layer.hidden) return;
   layer.hidden = true;
+  document.body.classList.remove('showing');
   $('#showframe').src = 'about:blank';
   if (document.fullscreenElement) document.exitFullscreen();
   if (showURL) URL.revokeObjectURL(showURL);

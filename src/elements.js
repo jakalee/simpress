@@ -272,8 +272,23 @@ function objStyle(o) {
   const vis = o.hidden ? 'visibility:hidden;' : '';
   return `${size}${op}${vis}transform:${objTransform(o)}`;
 }
+/* 편집 화면·썸네일에서는 움직이는 SVG 그림을 첫 장면으로 멈춰서 보여 줌.
+   큰 애니메이션 SVG가 캔버스와 썸네일에 여러 벌 겹치면 크롬이 매 프레임 다시 그리다 깜빡임 (발표·테스트 실행은 그대로 움직임) */
+const stillURLs = {};
+function stillURL(id) {
+  if (id in stillURLs) return stillURLs[id];
+  const m = /^data:image\/svg\+xml;base64,(.*)$/.exec((doc.assets || {})[id] || '');
+  let u = null;
+  if (m) {
+    try {
+      const t = new TextDecoder().decode(Uint8Array.from(atob(m[1]), c => c.charCodeAt(0)));
+      if (/animation\s*:/i.test(t)) u = URL.createObjectURL(new Blob([t.replace(/<svg\b[^>]*>/i, x => x + '<style>*{animation:none!important;transition:none!important}</style>')], { type: 'image/svg+xml' }));
+    } catch (e) { u = null; }
+  }
+  return (stillURLs[id] = u);
+}
 const editorSrc = o => {
-  const u = o.asset ? assetURL[o.asset] : o.src;
+  const u = o.asset ? (o.type === 'image' && stillURL(o.asset)) || assetURL[o.asset] : o.src;
   return u ? `src="${esc(u)}"` : '';
 };
 function objHTML(o, mode = 'edit', srcOf = editorSrc, extra = '') {
