@@ -5298,7 +5298,10 @@ var preview=window.parent!==window&&location.hash.indexOf('#/')!==0;
 if(preview)document.body.classList.add('zc-preview');
 var data=JSON.parse(document.getElementById('zc-data').textContent);
 document.querySelectorAll('[data-a]').forEach(function(el){var a=data.assets[el.getAttribute('data-a')];if(a)el.src=a;});
+var initialHash=location.hash;
 var api=impress();api.init();
+/* overview는 편집기 안의 전체 보기용 보조 단계입니다. 새 창에서는 첫 실제 슬라이드로 시작합니다. */
+if(!preview&&!initialHash)api.goto('step-1',0);
 /* 콘솔 미리보기는 '#step-3' 주소를 쓰므로 브라우저가 그 요소로 페이지를 스크롤해 화면이 어긋남.
    크롬은 file://을 다른 출처로 봐서 콘솔 쪽에서 되돌릴 수 없으니, 문서 스스로 스크롤을 0에 고정 */
 var noScroll=function(){var b=document.body,d=document.documentElement;if(window.scrollX||window.scrollY)window.scrollTo(0,0);b.scrollTop=b.scrollLeft=d.scrollTop=d.scrollLeft=0;};
