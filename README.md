@@ -1,6 +1,6 @@
 # Simple Impress Editor
 
-[한국어](README.ko.md) · [Live demo](https://jakalee.github.io/simpress/) 
+[한국어 설명서](README.ko.md) · [Open the editor](https://jakalee.github.io/simpress/) · [Interactive feature showcase](https://jakalee.github.io/simpress/example/feature-showcase.html)
 
 > A private, offline-first, single-file visual editor for impress.js presentations.
 
@@ -9,6 +9,14 @@
 [![Simple Impress Editor demo video](https://img.youtube.com/vi/ab3UqkjCUUY/maxresdefault.jpg)](https://youtu.be/ab3UqkjCUUY)
 
 ▶ [Watch the demo on YouTube](https://youtu.be/ab3UqkjCUUY)
+
+## Interactive feature showcase
+
+[![SIMPress interactive feature showcase](example/preview.png)](https://jakalee.github.io/simpress/example/feature-showcase.html)
+
+**[Launch the interactive showcase →](https://jakalee.github.io/simpress/example/feature-showcase.html)**
+
+This presentation was built and exported with SIMPress itself. Rotate the live 3D product, change the dashboard product type and load slider, run the p5.js field simulation, switch to the whiteboard, and press `O` to see the full spatial presentation. See the [showcase guide](example/README.md) for controls and sample-asset credits.
 
 ## What you can do with it
 

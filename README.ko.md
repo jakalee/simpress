@@ -1,6 +1,6 @@
 # Simple Impress Editor
 
-[English](README.md) · [바로 써보기](https://jakalee.github.io/simpress/) · [최신 버전 다운로드](https://github.com/jakalee/simpress/releases/latest)
+[English](README.md) · [편집기 바로 열기](https://jakalee.github.io/simpress/) · [인터랙티브 기능 데모](https://jakalee.github.io/simpress/example/feature-showcase.html) · [최신 버전 다운로드](https://github.com/jakalee/simpress/releases/latest)
 
 > 비공개·오프라인 우선·단일 파일 방식의 impress.js 비주얼 프레젠테이션 편집기입니다.
 
@@ -9,6 +9,14 @@
 [![Simple Impress Editor 데모 영상](https://img.youtube.com/vi/ab3UqkjCUUY/maxresdefault.jpg)](https://youtu.be/ab3UqkjCUUY)
 
 ▶ [YouTube에서 데모 영상 보기](https://youtu.be/ab3UqkjCUUY)
+
+## 인터랙티브 기능 쇼케이스
+
+[![SIMPress 인터랙티브 기능 쇼케이스](example/preview.png)](https://jakalee.github.io/simpress/example/feature-showcase.html)
+
+**[인터랙티브 기능 데모 실행하기 →](https://jakalee.github.io/simpress/example/feature-showcase.html)**
+
+이 소개자료도 SIMPress로 직접 만들고 HTML 하나로 내보낸 결과물입니다. 3D 제품을 직접 돌리고, 대시보드의 제품군과 부하 슬라이더를 바꾸고, p5.js 필드 시뮬레이션과 화이트보드를 실행해 보세요. `O` 키를 누르면 전체 공간 구성을 볼 수 있습니다. 조작법과 샘플 자료 출처는 [데모 설명서](example/README.md)에 정리했습니다.
 
 ## 이런 걸 할 수 있습니다
 
