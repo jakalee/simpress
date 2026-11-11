@@ -24,13 +24,15 @@ const SEP = cfg.noteSeparator || '\n\n— 한국어 —\n\n';
     const p = path.resolve(dir, f.path);
     files[k] = { b64: fs.readFileSync(p).toString('base64'), type: f.type, w: f.w, h: f.h, name: path.basename(p) };
   }
-  /* 4 slides per row, rows snake left-right-left, with depth and tilt so the overview fills the screen */
+  /* 4 slides per row, rows snake left-right-left, with depth and rotation so the overview fills the screen */
   const n = S.length, rows = Math.ceil(n / 4);
   const pos = S.map((_, i) => {
     const row = Math.floor(i / 4), col = row % 2 ? 3 - (i % 4) : i % 4;
     return {
       x: Math.round((col - 1.5) * 2450), y: Math.round((row - (rows - 1) / 2) * 1650 + Math.sin(i * 1.7) * 160), z: Math.round(Math.cos(i * 1.3) * 500 - 300),
-      rot: [0, 3, -3, 2, -4, 3, -2, 4, -3][i % 9], ry: [0, -14, 10, -10, 12, -12, 10, -10, 14][i % 9], rx: [0, 6, -5, 5, -6, 5, -5, 6, -4][i % 9], s: i === 0 ? 1.15 : 1,
+      /* no X/Y tilt on purpose: every layer of a slide sits on the same plane, and coplanar layers on a
+         tilted plane z-fight (Chrome flickers, Safari hides cards behind the background). Depth + Z rotation only. */
+      rot: [0, 6, -6, 4, -7, 6, -4, 7, -5][i % 9], ry: 0, rx: 0, s: i === 0 ? 1.15 : 1,
     };
   });
   const slides = S.map((s, i) => ({ ...s, pos: s.pos || pos[i], notes: NOTES[i] ? (Array.isArray(NOTES[i]) ? NOTES[i].filter(Boolean).join(SEP) : NOTES[i]) : '' }));
