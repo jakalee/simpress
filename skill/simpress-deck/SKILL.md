@@ -25,7 +25,7 @@ description: 작업지시서(자료 경로·청중·언어·분량·톤)를 받�
 - 파일만: `https://jakalee.github.io/simpress/skill/simpress-deck/deckgen/art.js` (`build.js`, `shots.js`, `example/*`도 같은 주소 규칙)
 
 필요 환경: Node 18+, `npm i playwright` 후 `npx playwright install chromium`.
-- 편집기는 기본으로 `https://jakalee.github.io/simpress/editor.html`을 쓴다.
+- 편집기는 기본으로 `https://jakalee.github.io/simpress/index.html`을 쓴다.
 - 오프라인이거나 로컬 편집기를 쓰려면 `deck.config.json`의 `"editor"`에 경로를 넣거나, 환경변수 `SIMPRESS_EDITOR`를 지정한다.
 
 ## 1. 작업지시서 양식

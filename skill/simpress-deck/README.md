@@ -36,7 +36,7 @@ AI 에이전트에게 **작업지시서** 한 장과 자료(pptx·pdf·svg·영�
 ### 공통으로 필요한 것
 - Node.js 18 이상
 - `npm i playwright` 와 `npx playwright install chromium`
-- 인터넷: 편집기(`https://jakalee.github.io/simpress/editor.html`)를 불러올 때만 필요합니다. 오프라인에서 쓰려면 simpress 저장소의 `editor.html` 경로를 `deck.config.json`의 `"editor"`에 넣으세요.
+- 인터넷: 편집기(`https://jakalee.github.io/simpress/index.html`)를 불러올 때만 필요합니다. 오프라인에서 쓰려면 simpress 저장소의 `editor.html` 경로를 `deck.config.json`의 `"editor"`에 넣으세요.
 
 ---
 
