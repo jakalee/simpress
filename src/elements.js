@@ -32,7 +32,6 @@ const OBJ_CSS = `
 .o img{object-fit:fill;-webkit-user-drag:none}
 .txt{white-space:pre-wrap;word-break:keep-all;overflow-wrap:break-word;line-height:1.28;outline:0;min-width:.5em;min-height:1em}
 .txt p,.txt ul,.txt ol{margin:0}.txt ul,.txt ol{padding-left:1.2em}.txt li+li{margin-top:.35em}
-.vidlink{position:absolute;right:0;bottom:-30px;font:16px sans-serif;color:var(--c-body)}
 .o-shape .sbox{position:absolute;inset:0;display:flex;align-items:center;padding:6% 8%;box-sizing:border-box}
 .stxt{width:100%;white-space:pre-wrap;word-break:keep-all;overflow-wrap:break-word;line-height:1.25;outline:0;min-height:1em}
 .stxt p,.stxt ul,.stxt ol{margin:0}.stxt ul,.stxt ol{padding-left:1.2em}
@@ -254,8 +253,8 @@ function objInner(o, mode, srcOf) {
   if (o.type === 'video') {
     if (mode === 'show') {
       // 로컬 파일에서도 재생되도록 공개된 프로젝트 플레이어를 거쳐 YouTube를 불러옵니다.
-      if (o.yt) return `<iframe src="https://jakalee.github.io/simpress/player.html?v=${esc(o.yt)}" allow="autoplay;encrypted-media;fullscreen" allowfullscreen></iframe><a class="vidlink" href="https://www.youtube.com/watch?v=${esc(o.yt)}" target="_blank" rel="noopener">YouTube에서 열기 ↗</a>`;
-      return `<video controls playsinline ${srcOf(o)}></video>`;
+      if (o.yt) return `<iframe src="https://jakalee.github.io/simpress/player.html?v=${esc(o.yt)}${o.noCtl ? '&c=0' : ''}" allow="autoplay;encrypted-media;fullscreen" allowfullscreen></iframe>`;
+      return o.noCtl ? `<video playsinline onclick="this.paused?this.play():this.pause()" style="cursor:pointer" ${srcOf(o)}></video>` : `<video controls playsinline ${srcOf(o)}></video>`;
     }
     const bg = o.yt ? `background:#111 url(https://img.youtube.com/vi/${esc(o.yt)}/hqdefault.jpg) center/cover` : 'background:#111';
     return `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;${bg}"><svg viewBox="0 0 100 100" style="width:22%;height:auto"><circle cx="50" cy="50" r="46" fill="rgba(0,0,0,.55)" stroke="#fff" stroke-width="3"/><polygon points="40,30 72,50 40,70" fill="#fff"/></svg></div>`;

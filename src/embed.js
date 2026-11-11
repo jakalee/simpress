@@ -142,8 +142,7 @@ function relativeRefs(html) {
   return [...new Set(refs)];
 }
 function addEmbed(props) {
-  const w = 960, h = 600;
-  const o = insertObj(makeObj('embed', { ...onView(viewCenter()), w, h, s: vw * .5 / w / cam.z, ...props }));
+  const o = insertObj(makeObj('embed', { ...slideFill(1280), ...props }));
   select([o.id]); commit();
   return o;
 }

@@ -209,8 +209,8 @@ async function addModelFile(file, at) {
     const blob = await fileToGLB(file);
     if (blob.size > 40e6) toast('모델이 커서 발표 파일도 그만큼 커집니다');
     const id = await addAsset(blob);
-    const w = 960, h = 640, s = vw * .5 / w / cam.z;
-    const o = insertObj(makeObj('model', { ...(at || onView(viewCenter())), asset: id, srcName: file.name, w, h, s }));
+    const fill = slideFill(960);
+    const o = insertObj(makeObj('model', { ...fill, ...(at || {}), asset: id, srcName: file.name }));
     select([o.id]); commit();
     queueSnap(o);
   } catch (err) {

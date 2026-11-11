@@ -9,6 +9,7 @@
 <style>
 html,body,iframe{width:100%;height:100%;margin:0;border:0;background:#000}
 body{display:grid;place-items:center;color:#fff;font:16px system-ui,sans-serif}
+#cover{position:fixed;inset:0;cursor:pointer;background:transparent}
 </style>
 </head>
 <body>
@@ -20,8 +21,24 @@ if (/^[A-Za-z0-9_-]{6,20}$/.test(id)) {
   frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
   frame.allowFullscreen = true;
   frame.referrerPolicy = 'strict-origin-when-cross-origin';
-  frame.src = 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(id) + '?autoplay=1&rel=0';
+  /* c=0: 컨트롤바를 숨기고, 투명 덮개로 YouTube 제목·로고 링크가 눌리지 않게 함 (클릭 = 재생/일시정지) */
+  const bare = new URLSearchParams(location.search).get('c') === '0';
+  frame.src = 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(id) + '?autoplay=1&rel=0&playsinline=1'
+    + (bare ? '&controls=0&disablekb=1&fs=0&iv_load_policy=3&enablejsapi=1&origin=' + encodeURIComponent(location.origin) : '');
   document.body.replaceChildren(frame);
+  if (bare) {
+    let state = -1;
+    const send = (func) => frame.contentWindow.postMessage(JSON.stringify({ event: 'command', func, args: [] }), '*');
+    frame.addEventListener('load', () => frame.contentWindow.postMessage(JSON.stringify({ event: 'listening', id: 1 }), '*'));
+    window.addEventListener('message', (e) => {
+      if (e.source !== frame.contentWindow) return;
+      try { const d = JSON.parse(e.data); if (d.info && typeof d.info.playerState === 'number') state = d.info.playerState; } catch (_) {}
+    });
+    const cover = document.createElement('div');
+    cover.id = 'cover';
+    cover.addEventListener('click', () => send(state === 1 ? 'pauseVideo' : 'playVideo'));
+    document.body.appendChild(cover);
+  }
 } else {
   document.body.textContent = 'Invalid YouTube video ID.';
 }

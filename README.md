@@ -57,6 +57,8 @@
 - Interactions — hover effects, click actions (go to slide, open link, show/hide, run JavaScript), entrance effects
 - 3D models — import GLB, glTF, STL, OBJ, and CAD (STEP, IGES); live rendering in the presentation (auto-rotate, orbit, animation) with per-part visibility and color. three.js and the CAD converter load on demand from version-pinned CDNs; without internet a snapshot image is shown instead
 - Web embeds — a self-contained HTML file (stored in the document) or a URL inside a slide; sandboxed, shown running on the editing canvas and in overview, and directly clickable during the talk. Heavy pages can be set to "run only when visible"; if a library cannot load (offline), the embed falls back to a placeholder. Includes p5.js examples (pendulum, waves, particles, 3-phase rotating field)
+- PDF import — open a PDF saved from PowerPoint or Keynote and every page becomes a slide (rendered at 4K so it stays sharp on Retina screens; path connected automatically)
+- Embeds, videos and 3D models are inserted filling the current slide; a "fill slide" button; optional hidden video controls
 - Paste images from the clipboard (screenshots, shapes copied from Apple Freeform or Keynote) with ⌘V
 - Multilingual viewing — exported HTML is real text, so browser page translation (e.g. Chrome) can show it in any language
 

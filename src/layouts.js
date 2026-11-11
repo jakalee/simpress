@@ -210,3 +210,58 @@ function deckPreviewSVG(key) {
   }).join('');
   return `<svg viewBox="0 0 240 130" width="240" height="130"><rect width="240" height="130" rx="6" fill="${T.theme === 0 ? '#eef1f5' : th.bg}"/>${rects}</svg>`;
 }
+
+/* ── PDF 불러오기: 페이지마다 슬라이드 하나 (숨은 프레임 + 고해상도 그림) ──
+   PowerPoint·Keynote에서 PDF로 저장하면 글자가 벡터라, 원하는 해상도로 선명하게 다시 그릴 수 있음 */
+const PDFJS = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/';
+let pdfjsReady = null;
+function loadPDFJS() {
+  return pdfjsReady || (pdfjsReady = (async () => {
+    if (!window.pdfjsLib) await loadScript(PDFJS + 'pdf.min.js');
+    /* 다른 출처(CDN)의 워커는 바로 띄울 수 없어 내용을 받아 blob 주소로 실행 */
+    const src = await (await fetch(PDFJS + 'pdf.worker.min.js')).text();
+    pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(new Blob([src], { type: 'text/javascript' }));
+    return pdfjsLib;
+  })().catch(e => { pdfjsReady = null; throw e; }));
+}
+function pickPDF() {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = 'application/pdf,.pdf';
+  inp.onchange = () => { if (inp.files[0]) importPDF(inp.files[0]); };
+  inp.click();
+}
+async function importPDF(file) {
+  if (editing) endEdit();
+  let lib, pdf;
+  try { toast('PDF 읽는 도구를 불러오는 중…'); lib = await loadPDFJS(); }
+  catch (e) { toast('PDF 도구를 불러오지 못했습니다 (인터넷 연결을 확인하세요)'); return; }
+  try { pdf = await lib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise; }
+  catch (e) { toast('PDF를 열지 못했습니다: ' + (e.message || e)); return; }
+  const n = pdf.numPages, name = file.name.replace(/\.pdf$/i, ''), first = doc.path.length;
+  const base = doc.objects.length ? boundsOf(doc.objects) : null, pos = arrangeSlides('row', n);
+  if (base) pos.forEach(p => { p.x += base.x - base.w / 2 + doc.W / 2; p.y += base.y + base.h / 2 + doc.H * 1.4; });
+  /* 레티나 전체 화면에서도 선명하도록 슬라이드 폭의 2배(1920→3840px), 한 장 최대 1600만 화소 */
+  const target = doc.W * 2, maxPx = 16e6;
+  for (let i = 1; i <= n; i++) {
+    toast(`PDF ${i}/${n}쪽 변환 중…`);
+    const page = await pdf.getPage(i), v1 = page.getViewport({ scale: 1 });
+    let k = target / v1.width;
+    if (v1.width * v1.height * k * k > maxPx) k = Math.sqrt(maxPx / (v1.width * v1.height));
+    const vp = page.getViewport({ scale: k }), c = document.createElement('canvas');
+    c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+    await page.render({ canvasContext: ctx, viewport: vp }).promise;
+    page.cleanup();
+    const blob = await new Promise(r => c.toBlob(r, 'image/png'));
+    const id = await addAsset(new File([blob], `${name}-p${i}.png`, { type: 'image/png' }));
+    const p = pos[i - 1], s = p.s || 1;
+    const f = insertObj(makeObj('frame', { rot: 0, rx: 0, ry: 0, z: 0, ...p, s, frame: 'hidden', slide: true, w: doc.W, h: Math.round(doc.W * c.height / c.width), name: n > 1 ? `${name} ${i}` : name }));
+    insertObj(makeObj('image', { x: f.x, y: f.y, z: f.z, rot: f.rot, rx: f.rx, ry: f.ry, asset: id, w: c.width, h: c.height, s: doc.W * s / c.width, name: `${name} p.${i}` }));
+    doc.path.push(f.id);
+  }
+  pdf.destroy();
+  activeStep = first;
+  renderAll(); commit(); renderPathList(); fitAll(600);
+  toast(`PDF ${n}쪽을 슬라이드로 넣었습니다`);
+}

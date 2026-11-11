@@ -204,9 +204,42 @@ async function addImages(files, at) {
   toast(`이미지 ${sorted.length}장을 격자로 놓고 경로에 연결했습니다`);
 }
 function addVideoObj(props) {
-  const w = 960, h = 540;
-  const o = insertObj(makeObj('video', { ...onView(viewCenter()), w, h, s: vw * .45 / w / cam.z, ...props }));
+  const o = insertObj(makeObj('video', { ...slideFill(1280), ...props }));
   select([o.id]); commit();
+}
+/* 기준 슬라이드: 선택한 프레임, 아니면 화면 가운데에 걸린 가장 작은(안쪽) 프레임 */
+function targetFrame(sx = vw / 2, sy = vh / 2) {
+  const s = selObjs().find(o => o.type === 'frame');
+  if (s) return s;
+  return doc.objects.filter(o => o.type === 'frame' && !o.hidden && hitQuad(o, sx, sy))
+    .sort((a, b) => a.w * a.h * a.s * a.s - b.w * b.h * b.s * b.s)[0] || null;
+}
+/* 새 객체를 슬라이드와 같은 비율·크기로 (화면 꽉 차게). w0 = 내용이 그려질 기준 가로 픽셀 */
+function slideFill(w0) {
+  const f = targetFrame();
+  if (f) return { x: f.x, y: f.y, z: f.z, rot: f.rot, rx: f.rx, ry: f.ry, w: w0, h: Math.round(w0 * f.h / f.w), s: f.w * f.s / w0 };
+  const h0 = Math.round(w0 * doc.H / doc.W);
+  return { ...onView(viewCenter()), w: w0, h: h0, s: Math.min(vw * .8 / w0, vh * .8 / h0) / cam.z };
+}
+/* 선택한 객체를 자기가 놓인 슬라이드(없으면 화면 가운데 슬라이드)에 꽉 채움.
+   그림은 비율 유지(안에 맞춤), 임베드·영상·3D·도형은 슬라이드 비율로 바꿔 채움 */
+const FILLABLE = ['embed', 'video', 'model', 'image', 'shape', 'chart'];
+function fillSlide() {
+  const list = selObjs().filter(o => FILLABLE.includes(o.type) && !o.locked);
+  if (!list.length) { toast('채울 객체(임베드·영상·3D·그림·도형·차트)를 고르세요'); return; }
+  let done = 0;
+  list.forEach(o => {
+    const f = doc.objects.filter(x => x.type === 'frame' && x !== o && containsPoint(x, o.x, o.y, o.z))
+      .sort((a, b) => a.w * a.h * a.s * a.s - b.w * b.h * b.s * b.s)[0] || targetFrame();
+    if (!f) return;
+    const FW = f.w * f.s, FH = f.h * f.s;
+    Object.assign(o, { x: f.x, y: f.y, z: f.z, rot: f.rot, rx: f.rx, ry: f.ry });
+    if (o.type === 'image') o.s = Math.min(FW / o.w, FH / o.h);
+    else { o.h = Math.round(o.w * FH / FW); o.s = FW / o.w; }
+    renderObj(o); done++;
+  });
+  if (!done) { toast('채울 슬라이드를 찾지 못했습니다. 슬라이드를 화면 가운데에 두세요'); return; }
+  syncOverlay(); renderProps(); commit();
 }
 const ytId = u => (/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/))([\w-]{6,})/.exec(u) || [])[1];
 
@@ -497,7 +530,7 @@ const ACT = {
   forward: () => stepZ(1), backward: () => stepZ(-1),
   toggleLock: id => toggleFlag('locked', id), toggleHide: id => toggleFlag('hidden', id),
   renameObj: id => renameObj(id),
-  newSlide, dupSlide, delSlide,
+  newSlide, dupSlide, delSlide, pdfImport: pickPDF, fillSlide,
   renameSlide: () => { const i = curStep(); if (i < 0) { toast('이름을 바꿀 슬라이드를 먼저 고르세요'); return; } renameObj(doc.path[i]); },
   moveSlide: d => moveSlide(+d),
   prevSlide: () => { const i = curStep(); goStep(i < 0 ? -1 : i - 1); }, nextSlide: () => goStep(curStep() + 1),
@@ -548,7 +581,7 @@ document.addEventListener('click', e => {
 
 /* ── 메뉴 막대: 항목은 모두 ACT 명령을 부릅니다 [이름, 명령, 인자, 단축키] ── */
 const MENUS = [
-  ['파일', [['새 캔버스', 'newDoc'], ['템플릿으로 새 덱…', 'deckDialog'], ['AI로 덱 만들기…', 'aiDeck'], ['열기…', 'open', '', '⌘O'], '-', ['JSON 저장', 'saveJSON', '', '⌘S'], ['HTML 내보내기', 'exportHTML', '', '⇧⌘E'], ['PDF로 내보내기 (슬라이드별)', 'exportPDF'], '-',
+  ['파일', [['새 캔버스', 'newDoc'], ['템플릿으로 새 덱…', 'deckDialog'], ['AI로 덱 만들기…', 'aiDeck'], ['PDF 불러오기 (슬라이드로)…', 'pdfImport'], ['열기…', 'open', '', '⌘O'], '-', ['JSON 저장', 'saveJSON', '', '⌘S'], ['HTML 내보내기', 'exportHTML', '', '⇧⌘E'], ['PDF로 내보내기 (슬라이드별)', 'exportPDF'], '-',
     ['지금 화면을 overview로 지정', 'setOverview'], ['overview 자동으로 되돌리기', 'clearOverview']]],
   ['편집', [['실행 취소', 'undo', '', '⌘Z'], ['다시 실행', 'redo', '', '⇧⌘Z'], '-', ['복사', 'copy', '', '⌘C'], ['붙여넣기', 'paste', '', '⌘V'], ['복제', 'dup', '', '⌘D'], ['삭제', 'del', '', 'Delete'], '-',
     ['모두 선택', 'selectAll', '', '⌘A'], ['선택 해제', 'deselect', '', 'Esc']]],
@@ -556,7 +589,7 @@ const MENUS = [
     ['도형…', 'shapeMenu'], ['사각형', 'shape', 'rect'], ['원', 'shape', 'ellipse'], ['화살표', 'shape', 'arrow'], ['선', 'shape', 'line'], '-', ['표', 'table'], ['막대 차트', 'chart', 'bar'], ['꺾은선 차트', 'chart', 'line'], ['원 차트', 'chart', 'pie'], '-', ['3D 모델… (GLB·STL·OBJ·STEP·IGES)', 'model'], ['웹 임베드: HTML 파일…', 'embedFile'], ['웹 임베드: 웹 주소…', 'embedURL'], '-', ['연결선 잇기', 'connect'], ['펜으로 그리기', 'pen'], '-',
     ['이미지 파일…', 'image'], ['이미지 주소…', 'imageURL'], ['영상 주소…', 'videoURL'], ['영상 파일…', 'videoFile']]],
   ['슬라이드', [['처음부터 발표', 'runStart'], ['현재 슬라이드부터 발표', 'run', '', '⌘↵'], '-', ['새 슬라이드', 'newSlide'],
-    ...Object.entries(LAYOUTS).map(([k, L]) => ['  └ ' + L.name, 'newSlide', k]), ['템플릿으로 새 덱…', 'deckDialog'], ['AI로 덱 만들기…', 'aiDeck'], '-', ['현재 슬라이드 복제', 'dupSlide'], ['현재 슬라이드 삭제', 'delSlide'], '-',
+    ...Object.entries(LAYOUTS).map(([k, L]) => ['  └ ' + L.name, 'newSlide', k]), ['템플릿으로 새 덱…', 'deckDialog'], ['AI로 덱 만들기…', 'aiDeck'], ['PDF 불러오기 (슬라이드로)…', 'pdfImport'], '-', ['현재 슬라이드 복제', 'dupSlide'], ['현재 슬라이드 삭제', 'delSlide'], '-',
     ['이전 슬라이드', 'prevSlide', '', 'PageUp'], ['다음 슬라이드', 'nextSlide', '', 'PageDown'], ['앞으로 옮기기', 'moveSlide', '-1'], ['뒤로 옮기기', 'moveSlide', '1'], '-',
     ['슬라이드 이름 바꾸기…', 'renameSlide'], ['경로 잇기 모드', 'path'], ['지금 화면을 경로에 추가', 'addView'], '-', ['슬라이드를 PDF로 내보내기', 'exportPDF']]],
   ['레이어', [['맨 앞으로', 'front', '', '⇧⌘]'], ['앞으로', 'forward', '', '⌘]'], ['뒤로', 'backward', '', '⌘['], ['맨 뒤로', 'back', '', '⇧⌘['], '-',
@@ -920,7 +953,10 @@ function renderProps() {
   if (o.type === 'model') h = modelProps(o);
   if (o.type === 'embed') h = embedProps(o);
   if (o.type === 'image') h = `<h3>이미지</h3><label class="row"><span>모서리</span><input type="range" data-p="radius" min="0" max="200" value="${o.radius}"></label>`;
-  if (o.type === 'video') h = `<h3>영상</h3><p class="note">편집 중에는 자리표시만 보이고, 테스트 실행과 내보낸 파일에서 재생됩니다.</p>`;
+  if (o.type === 'video') h = `<h3>영상</h3><label class="row"><span>컨트롤바 숨기기</span><input type="checkbox" data-act="toggleProp" data-arg="noCtl"${o.noCtl ? ' checked' : ''}></label>
+    <p class="note">숨기면 영상을 클릭해서 재생·일시정지합니다.${o.yt ? ' YouTube 제목·로고 링크도 눌리지 않게 막습니다 (YouTube가 그리는 제목 표시 자체는 잠깐 보일 수 있음).' : ''}</p>
+    <p class="note">편집 중에는 자리표시만 보이고, 테스트 실행과 내보낸 파일에서 재생됩니다.</p>`;
+  if (FILLABLE.includes(o.type)) h += `<button class="wide" data-act="fillSlide">슬라이드에 꽉 채우기</button>`;
   if (o.type !== 'frame' && inPath) h += `<h4>발표자 노트</h4><textarea data-p="notes" rows="3" placeholder="발표 화면에서 P키로 봅니다">${esc(o.notes)}</textarea>`;
   p.innerHTML = h + fxProps(o) + geomHTML() + `<h4>순서</h4>${pathBtn}<button class="wide" data-act="view">이 객체로 이동</button>${acts}`;
   fillGeom();
@@ -1074,6 +1110,7 @@ stage.addEventListener('drop', e => {
   e.preventDefault();
   const files = [...e.dataTransfer.files], [sx, sy] = pt(e);
   if (files[0] && /\.(json|html?)$/i.test(files[0].name)) openFile(files[0]);
+  else if (files[0] && /\.pdf$/i.test(files[0].name)) importPDF(files[0]);
   else if (files[0] && MODEL_EXT.includes(files[0].name.split('.').pop().toLowerCase())) addModelFile(files[0], onView(s2w(sx, sy)));
   else addImages(files, s2w(sx, sy));
 });
