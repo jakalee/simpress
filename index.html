@@ -7621,8 +7621,10 @@ var replay=function(el,cls){el.classList.remove(cls);void el.offsetWidth;el.clas
 document.addEventListener('impress:stepenter',function(e){
   var id=e.target.id;
   document.querySelectorAll('.o-chart[data-step="'+id+'"]').forEach(function(el){replay(el,'play');});
-  document.querySelectorAll('.o[data-enter][data-step="'+id+'"]').forEach(function(el,i){
-    [].forEach.call(el.children,function(c){c.style.animationDelay=(i*.12)+'s';});
+  /* 순서대로 0.12초씩 늦게, 다만 객체가 많아도 전체가 1.6초 안에 다 나오도록 간격을 줄임 */
+  var fxs=document.querySelectorAll('.o[data-enter][data-step="'+id+'"]'),gap=Math.min(.12,1.6/Math.max(1,fxs.length));
+  [].forEach.call(fxs,function(el,i){
+    [].forEach.call(el.children,function(c){c.style.animationDelay=(i*gap).toFixed(3)+'s';});
     replay(el,'fx-in');
   });
 });
