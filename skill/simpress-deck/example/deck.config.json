@@ -2,7 +2,6 @@
   "title": "simpress deck example",
   "name": "example_deck",
   "out": "out",
-  "editor": "https://jakalee.github.io/simpress/index.html",
   "theme": 3,
   "bg": "#040913",
   "duration": 1500,

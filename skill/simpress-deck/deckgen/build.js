@@ -11,7 +11,9 @@ const dir = path.resolve(process.argv[2] || '.');
 const cfg = JSON.parse(fs.readFileSync(path.join(dir, 'deck.config.json'), 'utf8'));
 const { S } = require(path.join(dir, 'slides.js'));
 const NOTES = fs.existsSync(path.join(dir, 'notes.js')) ? require(path.join(dir, 'notes.js')) : [];
-const EDITOR = process.env.SIMPRESS_EDITOR || cfg.editor || 'https://jakalee.github.io/simpress/index.html';
+/* editor: env > deck.config.json > bundled copy next to this script (zip package) > GitHub Pages */
+const BUNDLED = path.join(__dirname, 'editor.html');
+const EDITOR = process.env.SIMPRESS_EDITOR || cfg.editor || (fs.existsSync(BUNDLED) ? BUNDLED : 'https://jakalee.github.io/simpress/index.html');
 const OUT = path.resolve(dir, cfg.out || 'out'), NAME = cfg.name || 'deck';
 const SEP = cfg.noteSeparator || '\n\n— 한국어 —\n\n';
 
