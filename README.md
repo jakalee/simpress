@@ -1,6 +1,6 @@
 # Simple Impress Editor
 
-[한국어](README.ko.md) · [Live demo](https://jakalee.github.io/simpress/) · [Download the latest release](https://github.com/jakalee/simpress/releases/latest)
+[한국어](README.ko.md) · [Live demo](https://jakalee.github.io/simpress/) 
 
 > A private, offline-first, single-file visual editor for impress.js presentations.
 
